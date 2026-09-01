@@ -6,29 +6,29 @@ Puedes acceder a la app web desplegada a través del siguiente enlace:
   
 ---
 
-## 💻 2. Aplicación de Escritorio (`gui/`)
-Es una aplicación independiente para Windows que **no requiere abrir MATLAB ni manipular código fuente**.
+## 💻 2. Versión de Escritorio (MATLAB)
+Aplicación independiente para Windows que se ejecuta como un programa normal sin abrir el entorno de MATLAB ni ver código fuente.
 
-Los archivos para ejecutarla se encuentran dentro de la carpeta `gui/`:
+Según el equipo donde la vayas a ejecutar, elige una de las dos opciones:
 
-### 🔹 Caso A: Si ya tienes MATLAB instalado en tu computadora
-1. Entra a la carpeta `gui/`.
-2. Descarga y ejecuta directamente el archivo **`AppReto01.exe`** con doble clic.
-
----
-
-### 🔹 Caso B: Si NO tienes MATLAB instalado (o estás en otra PC)
-Para correr la aplicación sin tener el software de MATLAB, se requiere el motor gratuito de ejecución (**MATLAB Runtime**):
-
-1. Entra a la carpeta `gui/` y descarga el archivo **`MyAppInstaller_web.exe`**.
-2. Ejecuta **`MyAppInstaller_web.exe`**: este instalador descargará y configurará automáticamente el MATLAB Runtime gratuito en tu sistema.
-3. Una vez finalizada la instalación, podrás abrir y usar la aplicación normalmente desde el acceso directo creado o ejecutando **`AppReto01.exe`**.
+### 🔹 Opción A: Si ya tienes MATLAB instalado en tu PC
+Solo necesitas descargar y abrir directamente el ejecutable:
+1. Ve a la carpeta: `gui/AppReto01/for_redistribution_files_only/`
+2. Descarga y ejecuta con doble clic el archivo **`AppReto01.exe`**.
 
 ---
 
-## 📁 Estructura del Repositorio
+### 🔹 Opción B: Si NO tienes MATLAB instalado
+Para computadoras sin MATLAB, se requiere instalar previamente el motor de ejecución gratuito (**MATLAB Runtime**):
+1. Ve a la carpeta: `gui/AppReto01/for_redistribution/`
+2. Descarga y ejecuta el instalador **`MyAppInstaller_web.exe`**.
+3. El instalador descargará e instalará automáticamente el motor gratuito necesario.
+4. Al finalizar la instalación, podrás abrir y usar la aplicación con normalidad.
 
-- `gui/`: Contiene el ejecutable independiente (`AppReto01.exe`), el instalador web (`MyAppInstaller_web.exe`) y el archivo fuente `.m`.
-- `src/`: Funciones de cálculo, modelos matemáticos y generación de reportes.
-- `web/`: Archivos HTML, JavaScript y estilos desplegados en GitHub Pages.
-- `test/`: Pruebas unitarias y validaciones de persistencia y cálculo.
+---
+
+## 📁 Estructura del Proyecto
+* `web/`: Aplicación web interactiva (desplegada en GitHub Pages).
+* `gui/`: Archivos de la interfaz de escritorio, código fuente `.m`, ejecutable directo e instalador de Runtime.
+* `src/`: Funciones de cálculo matemático, lógica y generación de reportes.
+* `test/`: Pruebas unitarias y validaciones del sistema.
