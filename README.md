@@ -6,24 +6,29 @@ Puedes acceder a la app web desplegada a través del siguiente enlace:
   
 ---
 
-## 💻 2. Aplicación de Escritorio (`AppReto01.exe`)
-Es una aplicación independiente para Windows que **no requiere abrir el entorno de desarrollo de MATLAB ni ver el código fuente**.
+## 💻 2. Aplicación de Escritorio (`gui/`)
+Es una aplicación independiente para Windows que **no requiere abrir MATLAB ni manipular código fuente**.
 
-### 📥 Requisitos para ejecutar la App de Escritorio:
-Para que cualquier usuario pueda ejecutar la aplicación sin tener el software de MATLAB instalado, se requiere el motor gratuito **MATLAB Runtime**:
+Los archivos para ejecutarla se encuentran dentro de la carpeta `gui/`:
 
-1. **Descargar MATLAB Runtime (Gratuito):**
-   - Puedes descargarlo directamente desde el sitio oficial de MathWorks:  
-     🔗 [Descargar MATLAB Runtime](https://www.mathworks.com/products/compiler/matlab-runtime.html)
-   - *(Asegúrate de instalar la versión correspondiente a la versión de MATLAB con la que se compiló el proyecto).*
-2. **Ejecutar la App:**
-   - Una vez instalado el Runtime, solo debes hacer doble clic sobre el archivo **`AppReto01.exe`** para abrir la interfaz directamente.
+### 🔹 Caso A: Si ya tienes MATLAB instalado en tu computadora
+1. Entra a la carpeta `gui/`.
+2. Descarga y ejecuta directamente el archivo **`AppReto01.exe`** con doble clic.
+
+---
+
+### 🔹 Caso B: Si NO tienes MATLAB instalado (o estás en otra PC)
+Para correr la aplicación sin tener el software de MATLAB, se requiere el motor gratuito de ejecución (**MATLAB Runtime**):
+
+1. Entra a la carpeta `gui/` y descarga el archivo **`MyAppInstaller_web.exe`**.
+2. Ejecuta **`MyAppInstaller_web.exe`**: este instalador descargará y configurará automáticamente el MATLAB Runtime gratuito en tu sistema.
+3. Una vez finalizada la instalación, podrás abrir y usar la aplicación normalmente desde el acceso directo creado o ejecutando **`AppReto01.exe`**.
 
 ---
 
 ## 📁 Estructura del Repositorio
 
-- `gui/`: Contiene la interfaz gráfica de escritorio y el ejecutable `AppReto01.exe`.
-- `src/`: Funciones y módulos de cálculo matemático, generación de reportes y lógica.
-- `web/`: Archivos HTML, CSS y JavaScript de la versión web pública.
-- `test/`: Pruebas unitarias y validaciones de persistencia y casos de cálculo.
+- `gui/`: Contiene el ejecutable independiente (`AppReto01.exe`), el instalador web (`MyAppInstaller_web.exe`) y el archivo fuente `.m`.
+- `src/`: Funciones de cálculo, modelos matemáticos y generación de reportes.
+- `web/`: Archivos HTML, JavaScript y estilos desplegados en GitHub Pages.
+- `test/`: Pruebas unitarias y validaciones de persistencia y cálculo.
