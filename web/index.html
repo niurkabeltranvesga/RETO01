@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto 01 · Requerimiento Energético</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="15" fill="#fcebdd" stroke="#e08a52" stroke-width="1.4"/>
+      <path d="M17.5 7 L10 18h5.2l-1.2 7.5L22 13h-5.3z" fill="#e08a52"/>
+    </svg>
+    <span class="brand-title">Requerimiento Energético</span>
+  </div>
+</header>
+
+<nav class="stepper" id="stepperNav" aria-label="Progreso del formulario">
+  <ol>
+    <li class="step is-active" data-step="1"><span class="step-num">1</span><span class="step-label">Proyecto</span></li>
+    <li class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Cargas</span></li>
+    <li class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Resultados</span></li>
+    <li class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Informe</span></li>
+  </ol>
+</nav>
+
+<main class="panels">
+
+  <!-- ===================== BIENVENIDA ===================== -->
+  <section class="panel is-active panel-bienvenida" id="panel-bienvenida">
+    <svg class="bienvenida-icon" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#fcebdd" stroke="#e08a52" stroke-width="1.5"/>
+      <path d="M35 14 L20 36h10.4l-2.4 15L44 26H33.6z" fill="#e08a52"/>
+    </svg>
+    <h1>Bienvenido/a</h1>
+    <p class="lead lead-bienvenida">
+      Esta herramienta te ayuda a caracterizar el consumo eléctrico de tu proyecto,
+      como primer paso antes de diseñar un sistema solar fotovoltaico. Registra tus
+      cargas (aparatos) y sus horarios de uso, y la aplicación calcula automáticamente
+      la potencia instalada, la demanda máxima, el consumo de energía diario, mensual
+      y anual, el costo estimado, y genera un informe de una página listo para la
+      siguiente etapa de dimensionamiento del sistema.
+    </p>
+    <ol class="bienvenida-pasos">
+      <li><strong>Proyecto</strong> — cuéntanos el nombre, contexto y datos generales.</li>
+      <li><strong>Cargas</strong> — registra tus aparatos y sus horarios de uso.</li>
+      <li><strong>Resultados</strong> — revisa los indicadores y el perfil horario.</li>
+      <li><strong>Informe</strong> — descarga el resumen en PDF.</li>
+    </ol>
+    <button class="btn btn-primary" id="btnComenzar">Comenzar →</button>
+  </section>
+
+  <!-- ===================== PASO 1: PROYECTO ===================== -->
+  <section class="panel" id="panel-1" aria-labelledby="tituloPanel1">
+    <h1 id="tituloPanel1">Datos del proyecto y contexto</h1>
+
+    <div class="field-grid">
+      <label class="field">
+        <span>Nombre / ID del proyecto</span>
+        <input type="text" id="nombreProyecto" placeholder="Ej. Vivienda Santa Marta">
+      </label>
+      <label class="field">
+        <span>Integrantes (separados por coma)</span>
+        <input type="text" id="integrantes" placeholder="Ej. Nombre Apellido, Nombre Apellido">
+      </label>
+      <label class="field">
+        <span>Fecha</span>
+        <input type="text" id="fechaProyecto" placeholder="dd/mm/aaaa">
+      </label>
+      <label class="field">
+        <span>Contexto de operación</span>
+        <select id="contexto">
+          <option value="off-grid">Off-grid</option>
+          <option value="on-grid" selected>On-grid</option>
+          <option value="hibrido-off-grid">Híbrido off-grid</option>
+          <option value="hibrido-on-grid">Híbrido on-grid</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="btn btn-primary" id="btnGuardarProyecto">Guardar datos del proyecto</button>
+    <p class="status" id="estadoProyecto" role="status"></p>
+
+    <hr class="divider">
+
+    <h2>Guardar o recuperar el proyecto</h2>
+    <div class="button-row">
+      <button class="btn btn-secondary" id="btnGuardarArchivo">Guardar proyecto en archivo (.json)</button>
+      <label class="btn btn-secondary file-btn">
+        Cargar proyecto desde archivo
+        <input type="file" id="inputCargarArchivo" accept=".json" hidden>
+      </label>
+    </div>
+    <p class="status" id="estadoArchivo" role="status"></p>
+
+    <div class="panel-nav">
+      <span></span>
+      <button class="btn btn-primary btn-next" data-goto="2">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- ===================== PASO 2: CARGAS ===================== -->
+  <section class="panel" id="panel-2" aria-labelledby="tituloPanel2">
+    <h1 id="tituloPanel2">Cuadro de cargas y horarios</h1>
+
+    <div class="field-grid field-grid-cargas">
+      <label class="field field-wide">
+        <span>Descripción de la carga</span>
+        <input type="text" id="descCarga" placeholder="Ej. Nevera">
+      </label>
+      <label class="field">
+        <span>Cantidad (N)</span>
+        <input type="number" id="cantCarga" value="1" min="1" step="1">
+      </label>
+      <label class="field">
+        <span>Potencia unitaria (W)</span>
+        <input type="number" id="potCarga" value="100" min="0.01" step="1">
+      </label>
+    </div>
+
+    <fieldset class="horario-fieldset">
+      <legend>Horario de uso (marque las horas activas, 0 a 23)</legend>
+      <div class="horario-grid" id="horarioGrid"><!-- 24 checkboxes generados por JS --></div>
+    </fieldset>
+
+    <div class="button-row">
+      <button class="btn btn-primary" id="btnAgregarCarga">Agregar carga al cuadro</button>
+      <button class="btn btn-secondary" id="btnEliminarCarga">Eliminar carga seleccionada</button>
+    </div>
+    <p class="status" id="estadoCarga" role="status"></p>
+
+    <div class="table-wrap">
+      <table id="tablaCargas">
+        <thead>
+          <tr>
+            <th></th><th>#</th><th>Carga</th><th>Cant.</th><th>Pot.unit.(W)</th>
+            <th>Pot.total(W)</th><th>Horas/día</th><th>Clasificación</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTablaCargas"></tbody>
+      </table>
+    </div>
+
+    <div class="panel-nav">
+      <button class="btn btn-secondary btn-back" data-goto="1">← Atrás</button>
+      <button class="btn btn-primary btn-next" data-goto="3">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- ===================== PASO 3: RESULTADOS ===================== -->
+  <section class="panel" id="panel-3" aria-labelledby="tituloPanel3">
+    <h1 id="tituloPanel3">Parámetros y resultados</h1>
+
+    <div class="field-grid">
+      <label class="field">
+        <span>Días de operación / mes</span>
+        <input type="number" id="diasMes" value="30" min="1" max="31">
+      </label>
+      <label class="field">
+        <span>Días de operación / año</span>
+        <input type="number" id="diasAnio" value="360" min="1" max="366">
+      </label>
+      <label class="field">
+        <span>Costo unitario CU ($/kWh)</span>
+        <input type="number" id="costoUnitario" value="0" min="0" step="0.01">
+      </label>
+      <label class="field">
+        <span>Hora inicio día / fin día</span>
+        <div class="dual-input">
+          <input type="number" id="horaInicioDia" value="6" min="0" max="23">
+          <input type="number" id="horaFinDia" value="18" min="0" max="23">
+        </div>
+      </label>
+    </div>
+
+    <button class="btn btn-primary" id="btnCalcular">Calcular resultados</button>
+    <p class="status" id="estadoResultados" role="status"></p>
+
+    <div class="indicadores" id="indicadoresGrid">
+      <!-- tarjetas generadas por JS -->
+    </div>
+
+    <div class="chart-card">
+      <h2>Perfil horario de demanda (24 h)</h2>
+      <svg id="graficoPerfil" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="panel-nav">
+      <button class="btn btn-secondary btn-back" data-goto="2">← Atrás</button>
+      <button class="btn btn-primary btn-next" data-goto="4">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- ===================== PASO 4: INFORME ===================== -->
+  <section class="panel" id="panel-4" aria-labelledby="tituloPanel4">
+    <h1 id="tituloPanel4">Informe ejecutivo</h1>
+    <p class="lead">Genera un informe de una página en PDF con los datos del proyecto, indicadores, cuadro de cargas, perfil horario y costos.</p>
+
+    <button class="btn btn-primary" id="btnGenerarInforme">Generar informe (PDF)</button>
+    <p class="status" id="estadoInforme" role="status"></p>
+
+    <div class="panel-nav">
+      <button class="btn btn-secondary btn-back" data-goto="3">← Atrás</button>
+      <span></span>
+    </div>
+  </section>
+
+</main>
+
+<!-- Librería para exportar el informe a PDF desde el navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="motorCalculo.js"></script>
+<script src="informe.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
