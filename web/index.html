@@ -23,7 +23,8 @@
     <li class="step is-active" data-step="1"><span class="step-num">1</span><span class="step-label">Proyecto</span></li>
     <li class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Cargas</span></li>
     <li class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Resultados</span></li>
-    <li class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Informe</span></li>
+    <li class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Generador</span></li>
+    <li class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Informe</span></li>
   </ol>
 </nav>
 
@@ -37,17 +38,18 @@
     </svg>
     <h1>Bienvenido/a</h1>
     <p class="lead lead-bienvenida">
-      Esta herramienta te ayuda a caracterizar el consumo eléctrico de tu proyecto,
-      como primer paso antes de diseñar un sistema solar fotovoltaico. Registra tus
-      cargas (aparatos) y sus horarios de uso, y la aplicación calcula automáticamente
-      la potencia instalada, la demanda máxima, el consumo de energía diario, mensual
-      y anual, el costo estimado, y genera un informe de una página listo para la
-      siguiente etapa de dimensionamiento del sistema.
+      Esta herramienta te ayuda a caracterizar el consumo eléctrico de tu proyecto
+      y a dimensionar su generador solar fotovoltaico. Registra tus cargas (aparatos)
+      y sus horarios de uso, y la aplicación calcula la potencia instalada, la demanda
+      máxima, el consumo de energía diario, mensual y anual y el costo estimado. Con el
+      recurso solar del sitio calcula la potencia pico, el número de módulos y su
+      configuración, y genera un informe en PDF.
     </p>
     <ol class="bienvenida-pasos">
       <li><strong>Proyecto</strong> — cuéntanos el nombre, contexto y datos generales.</li>
       <li><strong>Cargas</strong> — registra tus aparatos y sus horarios de uso.</li>
       <li><strong>Resultados</strong> — revisa los indicadores y el perfil horario.</li>
+      <li><strong>Generador</strong> — dimensiona el generador fotovoltaico con el recurso solar del sitio.</li>
       <li><strong>Informe</strong> — descarga el resumen en PDF.</li>
     </ol>
     <button class="btn btn-primary" id="btnComenzar">Comenzar →</button>
@@ -128,20 +130,57 @@
 
     <div class="button-row">
       <button class="btn btn-primary" id="btnAgregarCarga">Agregar carga al cuadro</button>
+      <button class="btn btn-secondary" id="btnEditarCarga">Editar carga seleccionada</button>
       <button class="btn btn-secondary" id="btnEliminarCarga">Eliminar carga seleccionada</button>
+      <button class="btn btn-secondary" id="btnCancelarEdicion" hidden>Cancelar edición</button>
     </div>
     <p class="status" id="estadoCarga" role="status"></p>
+    <div class="confirmar-eliminar" id="confirmarEliminarCarga" hidden>
+      <span>¿Eliminar la carga seleccionada? Esta acción no se puede deshacer.</span>
+      <button class="btn btn-secondary btn-small" id="btnConfirmarEliminar">Sí, eliminar</button>
+      <button class="btn btn-secondary btn-small" id="btnCancelarEliminar">Cancelar</button>
+    </div>
 
     <div class="table-wrap">
       <table id="tablaCargas">
         <thead>
           <tr>
             <th></th><th>#</th><th>Carga</th><th>Cant.</th><th>Pot.unit.(W)</th>
-            <th>Pot.total(W)</th><th>Horas/día</th><th>Clasificación</th>
+            <th>Pot.total(W)</th><th>Horario</th><th>Clasificación</th>
           </tr>
         </thead>
         <tbody id="cuerpoTablaCargas"></tbody>
       </table>
+    </div>
+
+    <hr class="divider">
+
+    <h2>Perfil medido con el equipo <span class="etiqueta-opcional">opcional</span></h2>
+    <p class="lead">
+      Si cuentas con el equipo de medición (pinzas + nodo ESP32), carga aquí la hoja de datos
+      que registró. La aplicación arma con ella el perfil real de 24 horas. Si no tienes el
+      equipo, no tienes que hacer nada: el perfil se estima con las cargas que registraste arriba.
+    </p>
+
+    <div class="button-row">
+      <label class="btn btn-secondary file-btn">
+        Cargar hoja de datos del medidor
+        <input type="file" id="inputCargarMedicion" accept=".csv,.txt,.json" hidden>
+      </label>
+      <button class="btn btn-secondary" id="btnQuitarMedicion" hidden>Quitar medición</button>
+    </div>
+    <p class="status" id="estadoMedicion" role="status"></p>
+    <div class="aviso aviso-advertencia" id="avisoMedicion" hidden></div>
+
+    <div id="resumenMedicion" hidden>
+      <div class="indicadores indicadores-medicion" id="indicadoresMedicion"></div>
+      <label class="field field-fuente">
+        <span>Perfil que se usará en los cálculos</span>
+        <select id="fuentePerfil">
+          <option value="medido">Medido con el equipo</option>
+          <option value="estimado">Estimado desde mis aparatos</option>
+        </select>
+      </label>
     </div>
 
     <div class="panel-nav">
@@ -178,6 +217,11 @@
 
     <button class="btn btn-primary" id="btnCalcular">Calcular resultados</button>
     <p class="status" id="estadoResultados" role="status"></p>
+    <div class="aviso aviso-advertencia" id="avisoCU0" hidden>
+      ⚠ El costo unitario (CU) es 0, por lo que todos los costos se calcularán como $0. Verifica que sea el valor correcto.
+    </div>
+    <div class="aviso aviso-fuente" id="avisoFuentePerfil" hidden></div>
+    <div class="aviso aviso-comparacion" id="avisoComparacion" hidden></div>
 
     <div class="indicadores" id="indicadoresGrid">
       <!-- tarjetas generadas por JS -->
@@ -185,7 +229,12 @@
 
     <div class="chart-card">
       <h2>Perfil horario de demanda (24 h)</h2>
-      <svg id="graficoPerfil" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet"></svg>
+      <p class="chart-hint">Pasa el cursor (o toca, en móvil) sobre una hora para ver su valor exacto en W.</p>
+      <div class="chart-wrap">
+        <svg id="graficoPerfil" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet"
+             role="img" aria-label="Gráfica del perfil horario de demanda en vatios"></svg>
+        <div class="chart-tooltip" id="tooltipGrafico" role="status" hidden></div>
+      </div>
     </div>
 
     <div class="panel-nav">
@@ -194,16 +243,183 @@
     </div>
   </section>
 
-  <!-- ===================== PASO 4: INFORME ===================== -->
+  <!-- ===================== PASO 4: GENERADOR (Reto 02) ===================== -->
   <section class="panel" id="panel-4" aria-labelledby="tituloPanel4">
-    <h1 id="tituloPanel4">Informe ejecutivo</h1>
-    <p class="lead">Genera un informe de una página en PDF con los datos del proyecto, indicadores, cuadro de cargas, perfil horario y costos.</p>
+    <h1 id="tituloPanel4">Dimensionamiento del generador fotovoltaico</h1>
+    <p class="lead">Convierte el consumo caracterizado en los pasos anteriores en un generador: potencia pico, número de módulos, configuración en cadenas, tensiones, corrientes y área.</p>
+
+    <div class="aviso aviso-advertencia" id="avisoSinResultados" hidden>
+      ⚠ Primero calcule los resultados en el Paso 3. El generador se dimensiona a partir de ese consumo, sin necesidad de ingresarlo nuevamente.
+    </div>
+
+    <h2>Datos que vienen del consumo</h2>
+    <p class="lead lead-corto">Se toman de los pasos anteriores; no requieren ingresarse nuevamente.</p>
+    <div class="indicadores" id="heredadosGrid"></div>
+    <div class="aviso aviso-fuente" id="coincidenciaSolar" hidden></div>
+
+    <hr class="divider">
+
+    <h2>Recurso solar del sitio</h2>
+    <div class="field-grid">
+      <label class="field field-wide">
+        <span>Sitio (base de datos local)</span>
+        <select id="selSitio"></select>
+      </label>
+    </div>
+    <p class="status" id="estadoDatos" role="status"></p>
+
+    <details class="consulta-api" id="bloqueApi">
+      <summary>Consultar otra ubicación en línea (PVGIS)</summary>
+      <div class="field-grid field-grid-4">
+        <label class="field"><span>Latitud</span><input type="number" id="apiLat" step="0.001" placeholder="11.226"></label>
+        <label class="field"><span>Longitud</span><input type="number" id="apiLon" step="0.001" placeholder="-74.188"></label>
+        <label class="field"><span>Inclinación (°)</span><input type="number" id="apiIncl" value="12" step="1"></label>
+        <label class="field"><span>Azimut (°, 0 = sur)</span><input type="number" id="apiAzim" value="0" step="1"></label>
+      </div>
+      <button class="btn btn-secondary" id="btnConsultarApi">Consultar PVGIS</button>
+      <p class="status" id="estadoApi" role="status"></p>
+    </details>
+
+    <div class="recurso-card" id="recursoSitio" hidden>
+      <div class="recurso-info" id="recursoInfo"></div>
+      <svg id="graficoMensual" viewBox="0 0 600 190" preserveAspectRatio="xMidYMid meet" role="img"
+           aria-label="Irradiación mensual del sitio"></svg>
+    </div>
+
+    <fieldset class="opciones-radio">
+      <legend>Dimensionar con</legend>
+      <label><input type="radio" name="criterioRecurso" value="critico" checked> El mes de menor recurso</label>
+      <label><input type="radio" name="criterioRecurso" value="anual"> El promedio anual</label>
+    </fieldset>
+
+    <hr class="divider">
+
+    <h2>Parámetros de diseño</h2>
+    <div class="field-grid field-grid-3">
+      <label class="field"><span>Factor global de desempeño (PR)</span><input type="number" id="genPR" value="0.70" step="0.01" min="0.1" max="1"></label>
+      <label class="field"><span>Tensión máxima del sistema (V)</span><input type="number" id="genVmax" value="600" step="10" min="1"></label>
+      <label class="field"><span>Área disponible (m²)</span><input type="number" id="genArea" value="20" step="0.5" min="0.1"></label>
+      <label class="field"><span>Temperatura mínima esperada (°C)</span><input type="number" id="genTmin" value="20" step="1"></label>
+      <label class="field"><span>Temperatura ambiente de operación (°C)</span><input type="number" id="genTamb" value="32" step="1"></label>
+    </div>
+
+    <h2>Método de cálculo de la potencia pico</h2>
+    <div class="field-grid">
+      <label class="field field-wide">
+        <span>Método</span>
+        <select id="genMetodo">
+          <option value="referencia">Método de referencia: Ppico = Ed / (HSP · PR)</option>
+          <option value="balance">Método propio: balance día/noche con factor de crecimiento y meta de cobertura</option>
+        </select>
+      </label>
+    </div>
+    <div id="campoMetodoBalance" hidden>
+      <div class="ayuda-criterio">
+        <strong>Ppico = Fc · Cob · (E_día + E_noche / η_bat) / (HSP · PR)</strong>, con Fc = 1 + g.
+        <ul>
+          <li><strong>E_día y E_noche:</strong> energía consumida dentro y fuera de la ventana solar; se toman del perfil de 24 h.</li>
+          <li><strong>η_bat:</strong> eficiencia de ida y vuelta de la batería. La energía nocturna se guarda y se saca, y en ese ciclo se pierde una parte.</li>
+          <li><strong>g:</strong> crecimiento de carga esperado. Con g = 0 no se agrega holgura.</li>
+          <li><strong>Cob:</strong> meta de cobertura, es decir, qué parte de la energía se quiere cubrir con el generador. Con 100 % se cubre toda. Menos de 100 % solo tiene sentido si hay otra fuente (red o planta).</li>
+        </ul>
+      </div>
+      <div class="field-grid field-grid-3">
+        <label class="field"><span>Eficiencia de la batería, η_bat</span><input type="number" id="genEtaBat" value="0.85" step="0.01" min="0.5" max="1"></label>
+        <label class="field"><span>Crecimiento de carga esperado, g (%)</span><input type="number" id="genCrecimiento" value="0" step="1" min="0"></label>
+        <label class="field"><span>Meta de cobertura, Cob (%)</span><input type="number" id="genCobertura" value="100" step="1" min="1" max="100"></label>
+      </div>
+      <div class="field-grid">
+        <label class="field field-wide"><span>Fuente de η_bat</span><input type="text" id="genFuenteEta" value="NREL, Annual Technology Baseline 2025 (ion-litio)"></label>
+      </div>
+      <label class="field field-justificacion">
+        <span>Justificación del crecimiento y de la meta de cobertura (se incluye en el informe PDF)</span>
+        <textarea id="genJustCrecimiento" rows="2" maxlength="300" placeholder="Ej.: El cliente prevé agregar dos aires en 3 años y quiere cubrir el 80 % de su consumo con energía solar."></textarea>
+      </label>
+    </div>
+
+    <h2>Módulo fotovoltaico</h2>
+    <div class="field-grid">
+      <label class="field">
+        <span>Criterio de selección del módulo</span>
+        <select id="genCriterioModulo">
+          <option value="menor_excedente">Automático: menor excedente</option>
+          <option value="menor_numero">Automático: menor número de módulos</option>
+          <option value="menor_area">Automático: menor área ocupada</option>
+          <option value="manual">Elegir manualmente</option>
+        </select>
+      </label>
+      <label class="field" id="campoModuloManual" hidden>
+        <span>Módulo</span>
+        <select id="genModuloManual"></select>
+      </label>
+    </div>
+
+    <div class="ayuda-criterio">
+      <strong>Orientación para seleccionar el criterio.</strong> La elección depende de las condiciones del proyecto.
+      <ul>
+        <li><strong>Menor excedente:</strong> recomendado cuando no existen restricciones de espacio ni de montaje; minimiza la potencia instalada que no se aprovecha.</li>
+        <li><strong>Menor número de módulos:</strong> recomendado cuando el montaje es complejo o el sitio es de difícil acceso; reduce estructuras de soporte y conexiones.</li>
+        <li><strong>Menor área ocupada:</strong> recomendado cuando la superficie disponible para el generador es limitada.</li>
+      </ul>
+      Una vez dimensionado el generador, la tabla «Catálogo evaluado» permite comparar el resultado de cada módulo.
+    </div>
+
+    <label class="field field-justificacion">
+      <span>Justificación técnica del criterio de selección (se incluye en el informe PDF)</span>
+      <textarea id="genJustificacion" rows="3" maxlength="400" placeholder="Ej.: Se seleccionó el criterio de menor excedente debido a que…"></textarea>
+      <span class="nota" id="contadorJustificacion">0 / 400 caracteres</span>
+    </label>
+
+    <div class="button-row">
+      <button class="btn btn-primary" id="btnDimensionar">Dimensionar generador</button>
+      <label class="btn btn-secondary file-btn">
+        Cargar catálogo o base de sitios (.json)
+        <input type="file" id="inputDatosGenerador" accept=".json" hidden>
+      </label>
+    </div>
+    <p class="status" id="estadoGenerador" role="status"></p>
+
+    <div id="resultadosGenerador" hidden>
+      <div class="aviso aviso-advertencia" id="avisosGenerador" hidden></div>
+      <div class="indicadores" id="indicadoresGenerador"></div>
+      <div class="aviso aviso-fuente" id="comparacionMetodo" hidden></div>
+      <div class="aviso aviso-fuente" id="explicacionSeleccion"></div>
+
+      <h2>Configuración eléctrica</h2>
+      <div class="indicadores" id="configuracionGenerador"></div>
+
+      <h2>Catálogo evaluado</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Módulo</th><th>Wp</th><th>Máx. serie</th><th>Módulos</th><th>Cadenas</th><th>P. instalada</th><th>Excedente</th><th>Área</th><th>Estado</th></tr>
+          </thead>
+          <tbody id="cuerpoCatalogo"></tbody>
+        </table>
+      </div>
+
+      <details class="supuestos-plegable" id="bloqueSupuestos">
+        <summary>Ver supuestos del cálculo</summary>
+        <ul class="lista-supuestos" id="listaSupuestos"></ul>
+      </details>
+    </div>
+
+    <div class="panel-nav">
+      <button class="btn btn-secondary btn-back" data-goto="3">← Atrás</button>
+      <button class="btn btn-primary btn-next" data-goto="5">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- ===================== PASO 5: INFORME ===================== -->
+  <section class="panel" id="panel-5" aria-labelledby="tituloPanel5">
+    <h1 id="tituloPanel5">Informe ejecutivo</h1>
+    <p class="lead">Genera el informe en PDF: la página del consumo (datos del proyecto, indicadores, cuadro de cargas, perfil horario y costos) y, si ya se dimensionó, la página del generador fotovoltaico.</p>
 
     <button class="btn btn-primary" id="btnGenerarInforme">Generar informe (PDF)</button>
     <p class="status" id="estadoInforme" role="status"></p>
 
     <div class="panel-nav">
-      <button class="btn btn-secondary btn-back" data-goto="3">← Atrás</button>
+      <button class="btn btn-secondary btn-back" data-goto="4">← Atrás</button>
       <span></span>
     </div>
   </section>
@@ -213,7 +429,11 @@
 <!-- Librería para exportar el informe a PDF desde el navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="motorCalculo.js"></script>
+<script src="medicion.js"></script>
+<script src="dimensionamiento.js"></script>
+<script src="datos/datos_respaldo.js"></script>
 <script src="informe.js"></script>
 <script src="app.js"></script>
+<script src="generador.js"></script>
 </body>
 </html>

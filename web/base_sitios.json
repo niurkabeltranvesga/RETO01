@@ -1,0 +1,85 @@
+{
+  "descripcion": "Base de datos local de recurso solar. Irradiación sobre el plano del generador en kWh/m²·día. Los valores mensuales son H(i)_m de PVGIS divididos por los días de cada mes; el anual es H(i)_y dividido por 365.",
+  "fechaActualizacion": "2026-10-04",
+  "sitios": [
+    {
+      "id": "nazareth-caso-prueba",
+      "casoPrueba": true,
+      "nombre": "Nazareth, Alta Guajira — caso de prueba (TdR)",
+      "latitud": 12.18,
+      "longitud": -71.28,
+      "inclinacionGrados": 12,
+      "azimutGrados": 0,
+      "irradiacionAnual": 5.8,
+      "irradiacionMesCritico": 5.2,
+      "mensual": null,
+      "fuente": "TdR Reto 02, sección 7.1: valores declarados en el plano del generador para el caso de prueba estandarizado. El TdR no entrega los doce valores mensuales.",
+      "fechaConsulta": "2026-10-04"
+    },
+    {
+      "id": "nazareth-pvgis",
+      "nombre": "Nazareth, Alta Guajira (PVGIS)",
+      "latitud": 12.175,
+      "longitud": -71.282,
+      "inclinacionGrados": 12,
+      "azimutGrados": 0,
+      "irradiacionAnual": 6.37,
+      "irradiacionAnualKWhm2Anio": 2323.46,
+      "mensual": [6.42, 6.89, 6.88, 6.61, 6.15, 6.20, 6.44, 6.59, 6.50, 5.96, 5.73, 6.06],
+      "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
+      "fechaConsulta": "2026-10-04"
+    },
+    {
+      "id": "unimagdalena-santa-marta",
+      "nombre": "Universidad del Magdalena, Santa Marta",
+      "latitud": 11.226,
+      "longitud": -74.188,
+      "inclinacionGrados": 12,
+      "azimutGrados": 0,
+      "irradiacionAnual": 5.01,
+      "irradiacionAnualKWhm2Anio": 1828.48,
+      "mensual": [5.74, 6.18, 5.77, 5.11, 4.61, 4.44, 4.44, 4.54, 4.80, 4.64, 4.68, 5.25],
+      "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
+      "fechaConsulta": "2026-10-04"
+    },
+    {
+      "id": "ied-san-jose-pueblo-viejo",
+      "nombre": "IED San José, Pueblo Viejo (Magdalena)",
+      "latitud": 10.997,
+      "longitud": -74.279,
+      "inclinacionGrados": 12,
+      "azimutGrados": 0,
+      "irradiacionAnual": 5.24,
+      "irradiacionAnualKWhm2Anio": 1912.28,
+      "mensual": [5.96, 6.40, 6.05, 5.38, 4.84, 4.68, 4.70, 4.77, 5.03, 4.85, 4.82, 5.48],
+      "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
+      "fechaConsulta": "2026-10-04"
+    },
+    {
+      "id": "aeropuerto-valledupar",
+      "nombre": "Aeropuerto Alfonso López, Valledupar",
+      "latitud": 10.429,
+      "longitud": -73.249,
+      "inclinacionGrados": 12,
+      "azimutGrados": 0,
+      "irradiacionAnual": 5.12,
+      "irradiacionAnualKWhm2Anio": 1870.13,
+      "mensual": [6.02, 6.33, 5.81, 4.98, 4.44, 4.55, 4.78, 4.79, 4.88, 4.65, 4.72, 5.62],
+      "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
+      "fechaConsulta": "2026-10-04"
+    },
+    {
+      "id": "uis-bucaramanga",
+      "nombre": "UIS, Bucaramanga (Santander)",
+      "latitud": 7.141,
+      "longitud": -73.120,
+      "inclinacionGrados": 12,
+      "azimutGrados": 0,
+      "irradiacionAnual": 4.66,
+      "irradiacionAnualKWhm2Anio": 1700.99,
+      "mensual": [5.39, 5.50, 5.05, 4.48, 3.98, 3.90, 4.09, 4.48, 4.83, 4.62, 4.57, 5.08],
+      "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
+      "fechaConsulta": "2026-10-04"
+    }
+  ]
+}

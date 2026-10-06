@@ -10,6 +10,8 @@
   --accent-tint: #fcebdd;
   --accent-tint-strong: #f8dcc4;
   --danger: #b3402f;
+  --danger-tint: #f8e2dd;
+  --danger-tint-strong: #f0c9c0;
   --ok: #2f7a4f;
   --radius: 14px;
   --font-display: Arial, Helvetica, sans-serif;
@@ -19,6 +21,13 @@
 }
 
 * { box-sizing: border-box; }
+
+/* El atributo hidden debe ganar siempre, aunque un elemento también tenga
+   una clase (ej. .btn, .confirmar-eliminar) que fije su propio "display":
+   una regla de autor normal le gana a la regla por defecto del navegador
+   para [hidden], sin importar la especificidad, así que sin este !important
+   un botón o aviso "oculto" se mostraría igual. */
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -171,6 +180,70 @@ h2 { font-size: 1.05rem; margin-top: 28px; color: var(--text); }
 .btn-secondary:hover { background: var(--bg); }
 .file-btn { cursor: pointer; }
 .button-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.btn-small { padding: 7px 14px; font-size: 0.8rem; }
+
+/* ============ AVISOS Y CONFIRMACIONES ============ */
+.aviso {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin: 12px 0;
+}
+.aviso-advertencia {
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-tint-strong);
+  color: var(--accent-deep);
+}
+.aviso-fuente {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.aviso-comparacion {
+  background: #f1f7f3;
+  border: 1px solid #cfe3d7;
+  color: #2a5c41;
+}
+.aviso-comparacion strong { color: var(--ok); }
+.aviso ul { margin: 6px 0 0; padding-left: 18px; }
+.aviso li + li { margin-top: 4px; }
+
+/* ============ MEDICIÓN (perfil del equipo, opcional) ============ */
+.etiqueta-opcional {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent-deep);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.indicadores-medicion { grid-template-columns: repeat(4, 1fr); margin-top: 14px; }
+.field-fuente { max-width: 320px; margin-top: 18px; }
+
+@media (max-width: 720px) {
+  .indicadores-medicion { grid-template-columns: 1fr; }
+}
+.confirmar-eliminar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--danger-tint);
+  border: 1px solid var(--danger-tint-strong);
+  color: var(--danger);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+.confirmar-eliminar span { flex: 1 1 240px; }
 
 .panel-nav {
   margin-top: 32px;
@@ -235,8 +308,42 @@ tbody tr { cursor: pointer; }
 .indicador-card .sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
 .chart-card { margin-top: 28px; }
-.chart-card h2 { margin-top: 0; }
-#graficoPerfil { width: 100%; height: auto; }
+.chart-card h2 { margin-top: 0; margin-bottom: 6px; }
+.chart-hint { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 12px; }
+.chart-wrap { position: relative; }
+#graficoPerfil { width: 100%; height: auto; display: block; }
+
+/* Barra resaltada al pasar el cursor: la regla CSS gana sobre el atributo
+   fill="..." del <rect>, que tiene la prioridad más baja de la cascada. */
+#graficoPerfil rect.barra { transition: fill 0.12s ease; }
+#graficoPerfil rect.barra.is-hover { fill: var(--accent-deep); }
+#graficoPerfil rect.barra-hit { cursor: crosshair; }
+
+.chart-tooltip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);
+  margin-top: -9px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--surface);
+  border: 1px solid var(--accent-tint-strong);
+  border-radius: 9px;
+  box-shadow: var(--shadow-card);
+  padding: 6px 11px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 3;
+}
+.chart-tooltip .tooltip-hora { font-size: 0.72rem; color: var(--text-muted); }
+.chart-tooltip .tooltip-valor {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent-deep);
+}
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 720px) {
@@ -249,4 +356,106 @@ tbody tr { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .panel.is-active { animation: none; }
+}
+
+/* ============ GENERADOR (Paso 4, Reto 02) ============ */
+.lead-corto { margin-top: -14px; margin-bottom: 14px; font-size: 0.85rem; }
+.field-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.field-grid-4 { grid-template-columns: repeat(4, 1fr); }
+/* Los campos se ajustan al ancho de su columna (sin esto, un campo numérico
+   puede salirse del recuadro, como pasaba con el azimut). */
+#panel-4 .field-grid > .field { min-width: 0; }
+#panel-4 .field input:not([type=checkbox]):not([type=radio]), #panel-4 .field select { width: 100%; min-width: 0; box-sizing: border-box; }
+.nota { display: block; margin-top: 6px; font-size: 0.78rem; color: var(--text-muted); }
+
+.ayuda-criterio {
+  margin: 4px 0 16px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-tint);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.ayuda-criterio ul { margin: 6px 0; padding-left: 20px; }
+.ayuda-criterio li { margin: 3px 0; }
+.field-justificacion { margin-bottom: 8px; }
+.field-justificacion textarea {
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+.field-justificacion textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+.field-justificacion .nota { margin-top: 0; text-align: right; font-weight: 400; }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+
+.consulta-api {
+  margin: 4px 0 18px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+}
+.consulta-api summary {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+.consulta-api[open] summary { margin-bottom: 14px; }
+
+.recurso-card {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  background: var(--surface);
+}
+.recurso-nombre { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.recurso-dato, .recurso-fuente { font-size: 0.78rem; color: var(--text-muted); }
+.recurso-valores { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; font-size: 0.86rem; }
+.recurso-valores strong { color: var(--accent-deep); font-size: 1.05rem; }
+#graficoMensual { width: 100%; height: auto; display: block; }
+
+.opciones-radio { border: none; padding: 0; margin: 4px 0 8px; display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.opciones-radio legend { font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; padding: 0; }
+.opciones-radio label { display: flex; align-items: center; gap: 7px; font-size: 0.9rem; cursor: pointer; }
+.opciones-radio input { accent-color: var(--accent); }
+
+#resultadosGenerador h2 { margin-top: 26px; }
+.etiqueta-ref {
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+  background: var(--border); color: var(--text-muted); font-size: 0.68rem; font-weight: 600;
+}
+tbody tr.fila-descartada td { color: var(--text-muted); font-style: italic; }
+#resultadosGenerador tbody tr { cursor: default; }
+
+.supuestos-plegable {
+  margin: 22px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: var(--bg);
+}
+.supuestos-plegable summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.supuestos-plegable[open] summary { margin-bottom: 10px; }
+.lista-supuestos { margin: 0; padding-left: 20px; font-size: 0.84rem; color: var(--text-muted); line-height: 1.55; }
+.lista-supuestos li + li { margin-top: 4px; }
+
+@media (max-width: 720px) {
+  .field-grid-3, .field-grid-4, .recurso-card { grid-template-columns: 1fr; }
 }
