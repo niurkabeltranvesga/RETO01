@@ -50,3 +50,5 @@ Para computadoras sin MATLAB, se requiere instalar previamente el motor de ejecu
 * `gui/`: Archivos de la interfaz de escritorio, código fuente `.m`, ejecutable directo e instalador de Runtime.
 * `src/`: Funciones de cálculo matemático, lógica y generación de reportes.
 * `test/`: Pruebas unitarias y validaciones del sistema.
+
+
