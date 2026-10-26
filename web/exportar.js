@@ -20,7 +20,7 @@
 
     const salida = {
       plataforma: {
-        nombre: 'Requerimiento Energético',
+        nombre: 'Dimensionamiento Fotovoltaico',
         version: version ? version.numero : '',
         fechaVersion: version ? version.fecha : '',
         fechaExportacion: new Date().toISOString().slice(0, 10),

@@ -63,7 +63,7 @@ function generarInformePDF(proyecto, resultados, parametros, generador, conversi
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(19);
   doc.setTextColor(...COLOR_OSCURO);
-  doc.text('Informe de Requerimiento Energético', margen, 11);
+  doc.text('Informe de Dimensionamiento Fotovoltaico', margen, 11);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
@@ -306,7 +306,7 @@ function generarInformePDF(proyecto, resultados, parametros, generador, conversi
 
   dibujarPies();
 
-  const nombreArchivo = 'Informe de Requerimiento Energético.pdf';
+  const nombreArchivo = 'Informe de Dimensionamiento Fotovoltaico.pdf';
   doc.save(nombreArchivo);
 
   // =====================================================================
