@@ -5,7 +5,7 @@
     {
       "id": "nazareth-caso-prueba",
       "casoPrueba": true,
-      "nombre": "Nazareth, Alta Guajira — caso de prueba (TdR)",
+      "nombre": "Nazareth, Alta Guajira — caso de prueba",
       "latitud": 12.18,
       "longitud": -71.28,
       "inclinacionGrados": 12,
@@ -13,7 +13,7 @@
       "irradiacionAnual": 5.8,
       "irradiacionMesCritico": 5.2,
       "mensual": null,
-      "fuente": "TdR Reto 02, sección 7.1: valores declarados en el plano del generador para el caso de prueba estandarizado. El TdR no entrega los doce valores mensuales.",
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 7.1): valores declarados en el plano del generador; no incluye los doce valores mensuales.",
       "fechaConsulta": "2026-10-04"
     },
     {
@@ -72,7 +72,7 @@
       "id": "uis-bucaramanga",
       "nombre": "UIS, Bucaramanga (Santander)",
       "latitud": 7.141,
-      "longitud": -73.120,
+      "longitud": -73.12,
       "inclinacionGrados": 12,
       "azimutGrados": 0,
       "irradiacionAnual": 4.66,
@@ -80,6 +80,26 @@
       "mensual": [5.39, 5.50, 5.05, 4.48, 3.98, 3.90, 4.09, 4.48, 4.83, 4.62, 4.57, 5.08],
       "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
       "fechaConsulta": "2026-10-04"
+    },
+    {
+      "id": "cartagena-bolivar",
+      "nombre": "Cartagena, Bolívar (casco urbano)",
+      "latitud": 10.388,
+      "longitud": -75.479,
+      "inclinacionGrados": 10,
+      "azimutGrados": 0,
+      "irradiacionAnual": 5.26,
+      "irradiacionAnualKWhm2Anio": 1920.45,
+      "mensual": [6.07, 6.38, 6.03, 5.39, 4.76, 4.78, 4.96, 4.94, 4.96, 4.70, 4.68, 5.55],
+      "fuente": "PVGIS-5, base de datos PVGIS-ERA5 (re.jrc.ec.europa.eu/pvg_tools), sistema conectado a red",
+      "fechaConsulta": "2026-10-25",
+      "segundaFuente": {
+        "fuente": "NASA POWER, API de climatología (superficie orientada al ecuador, inclinación igual a la latitud, 10,4°)",
+        "inclinacionGrados": 10.4,
+        "irradiacionAnual": 4.99,
+        "mensual": [5.81, 5.88, 5.39, 5.01, 4.50, 4.72, 4.86, 4.80, 4.67, 4.40, 4.48, 5.32],
+        "fechaConsulta": "2026-10-25"
+      }
     }
   ]
 }

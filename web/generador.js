@@ -1,6 +1,6 @@
 // generador.js
 //
-// Interfaz del Paso 4: dimensionamiento del generador fotovoltaico (Reto 02).
+// Interfaz del Paso 4: dimensionamiento del generador fotovoltaico.
 // Toma el consumo que ya calculó la aplicación (Paso 3) sin pedir que se
 // reingrese nada, lo combina con el recurso solar y el catálogo de módulos, y
 // muestra el resultado. Los cálculos viven en dimensionamiento.js.
@@ -10,6 +10,9 @@
 
   const D = window.Dimensionamiento;
   const M = window.MotorCalculo;
+  const fmt = M.formatoNumero;
+  // Valor de ficha con sus propios decimales (14,31 A; -0,23 %/°C).
+  const fv = v => fmt(v, (String(v).split('.')[1] || '').length);
   const estado = window.__estadoAppReto01;
   const $ = id => document.getElementById(id);
 
@@ -21,9 +24,14 @@
     sitios: [],
     origenCatalogo: '',
     origenSitios: '',
-    sitiosConsultados: [],   // resultados de PVGIS en esta sesión
+    sitiosConsultados: [],   // resultados de la consulta en línea en esta sesión
   };
   let dimensionado = false;  // si ya se pulsó "Dimensionar" al menos una vez
+  // Ajuste que el usuario aceptó en el paso de conversión y almacenamiento:
+  // { potenciaMinimaKWp, modulosSerieFijo } o null.
+  let ajusteConversion = null;
+  // Segunda fuente de recurso consultada en línea en esta sesión, por sitio.
+  const segundasEnLinea = {};
 
   // ---------------------------------------------------------------------
   // Utilidades
@@ -163,7 +171,7 @@
   });
 
   // ---------------------------------------------------------------------
-  // Datos heredados del consumo (RF-13) y coincidencia con el sol (RF-17)
+  // Datos heredados del consumo y coincidencia con el sol
   // ---------------------------------------------------------------------
   function renderizarHeredados() {
     const r = estado.resultados;
@@ -179,8 +187,8 @@
 
     const contexto = { 'off-grid': 'Off-grid', 'on-grid': 'On-grid', 'hibrido-off-grid': 'Híbrido off-grid', 'hibrido-on-grid': 'Híbrido on-grid' };
     $('heredadosGrid').innerHTML = tarjetas([
-      ['Energía diaria', r.energiaDiariaKWh.toFixed(2) + ' kWh', 'Ed, por día'],
-      ['Demanda máxima', r.demandaMaximaW.toFixed(0) + ' W', 'a las ' + h2(r.horaDemandaMaximaH) + ':00 h'],
+      ['Energía diaria', fmt(r.energiaDiariaKWh, 3) + ' kWh', 'Ed, por día'],
+      ['Demanda máxima', fmt(r.demandaMaximaW, 0) + ' W', 'a las ' + h2(r.horaDemandaMaximaH) + ':00 h'],
       ['Tipo de aplicación', contexto[estado.proyecto.contexto] || estado.proyecto.contexto, 'del Paso 1'],
       ['Días de operación', estado.parametros.diasOperacionAnio + ' d/año', estado.parametros.diasOperacionMes + ' d/mes'],
       ['Perfil de consumo', r.fuentePerfil === 'medido' ? 'Medido' : 'Estimado', r.fuentePerfil === 'medido' ? 'equipo de medición' : 'cuadro de cargas'],
@@ -193,16 +201,16 @@
       ? (r.horaDemandaMaximaH >= ini && r.horaDemandaMaximaH < fin)
       : (r.horaDemandaMaximaH >= ini || r.horaDemandaMaximaH < fin);
     $('coincidenciaSolar').innerHTML =
-      '<strong>Coincidencia con el recurso solar:</strong> de los ' + r.energiaDiariaKWh.toFixed(2) + ' kWh diarios, ' +
-      '<strong>' + c.dentroKWh.toFixed(3) + ' kWh (' + (c.fraccionDentro * 100).toFixed(1) + ' %)</strong> se consumen dentro de la ventana solar ' +
-      '(' + h2(ini) + ':00–' + h2(fin) + ':00 h) y <strong>' + c.fueraKWh.toFixed(3) + ' kWh</strong> fuera de ella. ' +
+      '<strong>Coincidencia con el recurso solar:</strong> de los ' + fmt(r.energiaDiariaKWh, 3) + ' kWh diarios, ' +
+      '<strong>' + fmt(c.dentroKWh, 3) + ' kWh (' + fmt(c.fraccionDentro * 100, 1) + ' %)</strong> se consumen dentro de la ventana solar ' +
+      '(' + h2(ini) + ':00–' + h2(fin) + ':00 h) y <strong>' + fmt(c.fueraKWh, 3) + ' kWh</strong> fuera de ella. ' +
       'La demanda máxima, a las ' + h2(r.horaDemandaMaximaH) + ':00 h, cae ' + (picoEnVentana ? 'dentro' : 'fuera') + ' de la ventana. ' +
       '<span class="nota">La ventana se configura en el Paso 3 (hora de inicio y fin del día).</span>';
     $('coincidenciaSolar').hidden = false;
   }
 
   // ---------------------------------------------------------------------
-  // Recurso solar del sitio (RF-14, RF-16)
+  // Recurso solar del sitio
   // ---------------------------------------------------------------------
   function sitioSeleccionado() {
     return todosLosSitios().find(s => s.id === $('selSitio').value) || null;
@@ -221,14 +229,14 @@
     }
 
     const nota = sitio.casoPrueba
-      ? '<p class="nota">Caso de prueba del TdR: sus valores anual y del mes crítico son declarados; el TdR no entrega los doce meses. Para reproducir el resultado de referencia, elija manualmente el módulo de referencia del TdR.</p>'
+      ? '<p class="nota">Caso de prueba: sus valores anual y del mes crítico son declarados y no incluyen los doce meses. Para reproducir el resultado de referencia, elija manualmente el módulo del caso de prueba.</p>'
       : '';
     $('recursoInfo').innerHTML = `
       <div class="recurso-nombre">${escapar(sitio.nombre)}</div>
-      <div class="recurso-dato">Lat ${sitio.latitud}° · Lon ${sitio.longitud}° · Inclinación ${sitio.inclinacionGrados}° · Azimut ${sitio.azimutGrados}°</div>
+      <div class="recurso-dato">Lat ${fv(sitio.latitud)}° · Lon ${fv(sitio.longitud)}° · Inclinación ${fv(sitio.inclinacionGrados)}° · Azimut ${fv(sitio.azimutGrados)}°</div>
       <div class="recurso-valores">
-        <span><strong>${rec.anual.toFixed(2)}</strong> kWh/m²·día promedio anual</span>
-        <span><strong>${rec.mesCritico.valor.toFixed(2)}</strong> kWh/m²·día en el mes crítico (${escapar(rec.mesCritico.nombre)})</span>
+        <span><strong>${fmt(rec.anual, 2)}</strong> kWh/m²·día promedio anual</span>
+        <span><strong>${fmt(rec.mesCritico.valor, 2)}</strong> kWh/m²·día en el mes crítico (${escapar(rec.mesCritico.nombre)})</span>
       </div>
       <div class="recurso-fuente">Fuente: ${escapar(sitio.fuente)} · Consulta: ${escapar(sitio.fechaConsulta)}</div>
       ${nota}`;
@@ -251,30 +259,40 @@
     escala.marcas.forEach(v => {
       const y = padT + alto - (v / escala.maximo) * alto;
       s += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#ece2d6"/>`;
-      s += `<text x="${padL - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#6b6058">${v}</text>`;
+      s += `<text x="${padL - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#6b6058">${fmt(v, v % 1 ? 1 : 0)}</text>`;
     });
     rec.mensual.forEach((v, m) => {
       const altura = (v / escala.maximo) * alto;
       const x = padL + m * paso + (paso - barra) / 2;
       const y = padT + alto - altura;
       const critico = m === rec.mesCritico.indice;
-      s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barra.toFixed(1)}" height="${altura.toFixed(1)}" rx="2" fill="${critico ? '#b85f32' : '#e8a77c'}"><title>${D.NOMBRES_MES[m]}: ${v.toFixed(2)} kWh/m²·día</title></rect>`;
+      s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barra.toFixed(1)}" height="${altura.toFixed(1)}" rx="2" fill="${critico ? '#b85f32' : '#e8a77c'}"><title>${D.NOMBRES_MES[m]}: ${fmt(v, 2)} kWh/m²·día</title></rect>`;
       s += `<text x="${(x + barra / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#6b6058">${nombres[m]}</text>`;
     });
     const yAnual = padT + alto - (rec.anual / escala.maximo) * alto;
     s += `<line x1="${padL}" y1="${yAnual.toFixed(1)}" x2="${W - padR}" y2="${yAnual.toFixed(1)}" stroke="#2a2320" stroke-dasharray="4 3"/>`;
-    s += `<text x="${W - padR - 2}" y="${(yAnual - 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#2a2320">promedio anual ${rec.anual.toFixed(2)}</text>`;
+    s += `<text x="${W - padR - 2}" y="${(yAnual - 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#2a2320">promedio anual ${fmt(rec.anual, 2)}</text>`;
     svg.innerHTML = s;
   }
 
   // ---------------------------------------------------------------------
-  // Consulta en línea a PVGIS con contingencia (RF-15)
-  // Sin credenciales: PVGIS no pide clave. Se guarda en caché cada consulta
-  // de la sesión y, si falla, se sigue con la base local y se declara.
+  // Consulta en línea a NASA POWER con contingencia
+  // Sin credenciales: NASA POWER no pide clave y sí admite consultas
+  // directas desde páginas web. Se guarda en caché cada consulta de la
+  // sesión y, si falla, se sigue con la base local y se declara.
   // ---------------------------------------------------------------------
-  const cachePVGIS = new Map();
+  const cacheConsultas = new Map();
   let ultimaContingencia = null;
-  const URL_PVGIS = 'https://re.jrc.ec.europa.eu/api/';
+  const URL_NASA_POWER = 'https://power.larc.nasa.gov/api/temporal/climatology/point';
+  const VALOR_FALTANTE_NASA = -999;
+  const MESES_NASA = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  // Inclinaciones que entrega NASA POWER (superficie orientada al ecuador)
+  // y el nombre del dato correspondiente en su respuesta.
+  const PLANOS_NASA = {
+    'latitud': { clave: 'SI_TILTED_AVG_LATITUDE', angulo: lat => Math.abs(lat), texto: 'igual a la latitud' },
+    'latitud+15': { clave: 'SI_TILTED_AVG_LAT_PLUS15', angulo: lat => Math.abs(lat) + 15, texto: 'latitud + 15°' },
+    'horizontal': { clave: 'SI_TILTED_AVG_HORIZONTAL', angulo: () => 0, texto: 'horizontal' },
+  };
   // Fecha del computador del usuario (no la de Greenwich): en Colombia, de
   // noche, toISOString() ya daría el día siguiente.
   function fechaLocalHoy() {
@@ -285,81 +303,67 @@
   async function leerMensajeDeError(respuesta) {
     try {
       const j = await respuesta.json();
-      return j && (j.message || j.error) ? String(j.message || j.error) : '';
+      if (j && Array.isArray(j.messages) && j.messages.length) return j.messages.join(' ');
+      return j && (j.message || j.error || j.header) ? String(j.message || j.error || j.header) : '';
     } catch (e) {
       return '';
     }
   }
 
-  async function consultarPVGIS(lat, lon, inclinacion, azimut) {
-    const clave = [lat, lon, inclinacion, azimut].map(v => Number(v).toFixed(3)).join('|');
-    if (cachePVGIS.has(clave)) return Object.assign({}, cachePVGIS.get(clave), { desdeCache: true });
+  async function consultarNasaPower(lat, lon, plano) {
+    const clave = [lat, lon].map(v => Number(v).toFixed(3)).concat(plano).join('|');
+    if (cacheConsultas.has(clave)) return Object.assign({}, cacheConsultas.get(clave), { desdeCache: true });
 
-    // Misma base de datos (PVGIS-ERA5) que se usó para armar la base local,
-    // para que los valores consultados sean comparables con ella.
-    const parametros = 'lat=' + lat + '&lon=' + lon + '&raddatabase=PVGIS-ERA5&peakpower=1&loss=14&angle=' + inclinacion +
-      '&aspect=' + azimut + '&outputformat=json';
-    const versiones = ['v5_3', 'v5_2'];
-    let ultimoError = null;
-
-    for (const version of versiones) {
-      const url = URL_PVGIS + version + '/PVcalc?' + parametros;
-      const control = typeof AbortController === 'function' ? new AbortController() : null;
-      const temporizador = control ? setTimeout(() => control.abort(), 15000) : null;
-      try {
-        const respuesta = await window.fetch(url, control ? { signal: control.signal } : {});
-        if (temporizador) clearTimeout(temporizador);
-        if (respuesta.status === 404) { ultimoError = new Error('versión ' + version + ' no disponible'); continue; }
-        if (!respuesta.ok) {
-          const detalle = await leerMensajeDeError(respuesta);
-          throw new Error('el servicio respondió con el código ' + respuesta.status + (detalle ? ': ' + detalle : ''));
-        }
-        const json = await respuesta.json();
-        const sitio = interpretarRespuestaPVGIS(json, { lat, lon, inclinacion, azimut, version });
-        cachePVGIS.set(clave, sitio);
-        return sitio;
-      } catch (err) {
-        if (temporizador) clearTimeout(temporizador);
-        if (err.name === 'AbortError') {
-          ultimoError = new Error('el servicio no respondió en 15 segundos');
-        } else if (err instanceof TypeError) {
-          // fetch lanza TypeError cuando no hay red o cuando el navegador
-          // bloquea la respuesta. PVGIS declara en su documentación que no
-          // admite consultas AJAX desde páginas web (política CORS).
-          ultimoError = new Error('el navegador no pudo completar la consulta: sin conexión, o bloqueada porque PVGIS no admite consultas directas desde páginas web');
-        } else {
-          ultimoError = err;
-        }
-        if (!(err.message || '').includes('no disponible')) break;
+    const url = URL_NASA_POWER + '?parameters=SI_EF_TILTED_SURFACE&community=RE&longitude=' + lon +
+      '&latitude=' + lat + '&format=JSON';
+    const control = typeof AbortController === 'function' ? new AbortController() : null;
+    const temporizador = control ? setTimeout(() => control.abort(), 15000) : null;
+    try {
+      const respuesta = await window.fetch(url, control ? { signal: control.signal } : {});
+      if (!respuesta.ok) {
+        const detalle = await leerMensajeDeError(respuesta);
+        throw new Error('el servicio respondió con el código ' + respuesta.status + (detalle ? ': ' + detalle : ''));
       }
+      const json = await respuesta.json();
+      const sitio = interpretarRespuestaNasa(json, { lat, lon, plano });
+      cacheConsultas.set(clave, sitio);
+      return sitio;
+    } catch (err) {
+      if (err.name === 'AbortError') throw new Error('el servicio no respondió en 15 segundos');
+      if (err instanceof TypeError || (err && err.name === 'TypeError')) throw new Error('sin conexión a internet o servicio no disponible');
+      throw err;
+    } finally {
+      if (temporizador) clearTimeout(temporizador);
     }
-    throw ultimoError || new Error('no se pudo consultar el servicio');
   }
 
-  function interpretarRespuestaPVGIS(json, p) {
-    const mensuales = json && json.outputs && json.outputs.monthly
-      ? (json.outputs.monthly.fixed || json.outputs.monthly)
-      : null;
-    if (!Array.isArray(mensuales) || mensuales.length !== 12) {
-      throw new Error('la respuesta no trae los doce valores mensuales');
-    }
-    const mensual = mensuales.map((fila, i) => {
-      if (typeof fila['H(i)_d'] === 'number') return Number(fila['H(i)_d'].toFixed(2));
-      if (typeof fila['H(i)_m'] === 'number') return Number((fila['H(i)_m'] / D.DIAS_MES[i]).toFixed(2));
-      throw new Error('la respuesta no trae la irradiación mensual en el plano');
+  function interpretarRespuestaNasa(json, p) {
+    const def = PLANOS_NASA[p.plano];
+    const serie = json && json.properties && json.properties.parameter && json.properties.parameter[def.clave];
+    if (!serie) throw new Error('la respuesta no trae la irradiación sobre el plano inclinado');
+    const mensual = MESES_NASA.map(m => {
+      const v = serie[m];
+      if (typeof v !== 'number' || v === VALOR_FALTANTE_NASA) throw new Error('la respuesta no trae los doce valores mensuales');
+      return Number(v.toFixed(2));
     });
-    const totales = json.outputs.totals && (json.outputs.totals.fixed || json.outputs.totals);
-    const anualTotal = totales && typeof totales['H(i)_y'] === 'number' ? totales['H(i)_y'] : null;
-    const base = json.inputs && json.inputs.meteo_data && json.inputs.meteo_data.radiation_db;
+    const anual = typeof serie.ANN === 'number' && serie.ANN !== VALOR_FALTANTE_NASA
+      ? Number(serie.ANN.toFixed(2))
+      : Number(D.promedioAnualDesdeMensual(mensual).toFixed(2));
+    const header = json.header || {};
+    const version = header.api && header.api.version ? ' ' + header.api.version : '';
+    const periodo = header.range ? ', ' + String(header.range).replace(/^.*\(([^)]+)\).*$/, '$1').replace(' - ', ' a ').replace('January', 'enero').replace('December', 'diciembre') : '';
+    const inclinacion = Number(def.angulo(p.lat).toFixed(1));
     return {
-      id: 'pvgis-' + p.lat + '-' + p.lon + '-' + p.inclinacion + '-' + p.azimut,
-      nombre: 'Consulta PVGIS (' + p.lat + ', ' + p.lon + ')',
+      id: 'nasa-' + p.lat + '-' + p.lon + '-' + p.plano,
+      nombre: 'Consulta NASA POWER (' + p.lat + ', ' + p.lon + ')',
       latitud: p.lat, longitud: p.lon,
-      inclinacionGrados: p.inclinacion, azimutGrados: p.azimut,
-      irradiacionAnual: anualTotal !== null ? Number((anualTotal / 365).toFixed(2)) : Number(D.promedioAnualDesdeMensual(mensual).toFixed(2)),
-      irradiacionAnualKWhm2Anio: anualTotal,
+      // Azimut con la convención de la base local (0 = sur): la superficie
+      // mira al ecuador, es decir al sur en el norte y al norte en el sur.
+      inclinacionGrados: inclinacion, azimutGrados: p.lat >= 0 ? 0 : 180,
+      irradiacionAnual: anual,
       mensual,
-      fuente: 'PVGIS API ' + p.version + ' (PVcalc)' + (base ? ', base de datos ' + base : '') + ', consulta en línea',
+      fuente: 'NASA POWER, API de climatología' + version + ' (superficie orientada al ecuador, inclinación ' + def.texto +
+        ')' + periodo + ', consulta en línea',
       fechaConsulta: fechaLocalHoy(),
       consultaEnLinea: true,
     };
@@ -368,30 +372,30 @@
   $('btnConsultarApi').addEventListener('click', async () => {
     const lat = Number($('apiLat').value);
     const lon = Number($('apiLon').value);
-    const incl = Number($('apiIncl').value);
-    const azim = Number($('apiAzim').value);
+    const plano = $('apiIncl').value;
     if ($('apiLat').value === '' || $('apiLon').value === '' || !(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) {
       mostrarEstado('estadoApi', 'Escriba una latitud entre −90 y 90 y una longitud entre −180 y 180.', 'error');
       return;
     }
-    if (!(incl >= 0 && incl <= 90) || !(azim >= -180 && azim <= 180)) {
-      mostrarEstado('estadoApi', 'La inclinación va de 0 a 90° y el azimut de −180 a 180°.', 'error');
+    if (!PLANOS_NASA[plano]) {
+      mostrarEstado('estadoApi', 'Elija la inclinación del generador.', 'error');
       return;
     }
     if (typeof window.fetch !== 'function') {
       registrarContingencia('este navegador no permite consultas en línea');
       return;
     }
-    mostrarEstado('estadoApi', 'Consultando PVGIS…', '');
+    mostrarEstado('estadoApi', 'Consultando NASA POWER…', '');
     $('btnConsultarApi').disabled = true;
     try {
-      const sitio = await consultarPVGIS(lat, lon, incl, azim);
+      const sitio = await consultarNasaPower(lat, lon, plano);
       if (!datos.sitiosConsultados.some(s => s.id === sitio.id)) datos.sitiosConsultados.push(sitio);
       ultimaContingencia = null;
       poblarSelectores();
       $('selSitio').value = sitio.id;
       renderizarRecurso();
-      mostrarEstado('estadoApi', (sitio.desdeCache ? 'Resultado tomado de la caché de esta sesión (no se repitió la consulta). ' : 'Consulta exitosa. ') + 'Fuente: ' + sitio.fuente + '.', 'ok');
+      mostrarEstado('estadoApi', (sitio.desdeCache ? 'Resultado tomado de la caché de esta sesión (no se repitió la consulta). ' : 'Consulta exitosa. ') +
+        'Plano a ' + fv(sitio.inclinacionGrados) + '°, irradiación media anual ' + fmt(sitio.irradiacionAnual, 2) + ' kWh/m²·día.', 'ok');
       recalcularSiCorresponde();
     } catch (err) {
       registrarContingencia(err.message || 'error de red');
@@ -409,7 +413,7 @@
     };
     const deLaBase = !(local && local.consultaEnLinea);
     mostrarEstado('estadoApi',
-      'No se pudo consultar PVGIS (' + motivo + '). Se continúa con ' + (deLaBase ? 'la base de datos local' : 'el sitio ya seleccionado') +
+      'No se pudo consultar NASA POWER (' + motivo + '). Se continúa con ' + (deLaBase ? 'la base de datos local' : 'el sitio ya seleccionado') +
       (local ? ': ' + local.nombre : '') + '. Esto quedará declarado en el informe.', 'error');
     recalcularSiCorresponde();
   }
@@ -435,12 +439,15 @@
       areaDisponibleM2: Number($('genArea').value),
       catalogo: datos.catalogo,
       criterioSeleccion: criterioModulo === 'manual' ? 'menor_excedente' : criterioModulo,
-      moduloManualId: criterioModulo === 'manual' ? $('genModuloManual').value : null,
+      moduloManualId: criterioModulo === 'manual' ? $('genModuloManual').value : (ajusteConversion && ajusteConversion.moduloId) || null,
+      moduloFijadoPorAjuste: criterioModulo !== 'manual' && !!(ajusteConversion && ajusteConversion.moduloId),
       metodoPotencia: $('genMetodo').value,
       etaBat: $('genEtaBat').value === '' ? NaN : Number($('genEtaBat').value),
       crecimientoPct: $('genCrecimiento').value === '' ? 0 : Number($('genCrecimiento').value),
       coberturaPct: $('genCobertura').value === '' ? 100 : Number($('genCobertura').value),
       contexto: estado.proyecto ? estado.proyecto.contexto : null,
+      potenciaMinimaKWp: ajusteConversion && ajusteConversion.potenciaMinimaKWp > 0 ? ajusteConversion.potenciaMinimaKWp : null,
+      modulosSerieFijo: ajusteConversion && ajusteConversion.modulosSerieFijo > 0 ? ajusteConversion.modulosSerieFijo : null,
     };
   }
 
@@ -465,6 +472,7 @@
       // Los supuestos se guardan con el resultado para que la app y el
       // informe PDF muestren exactamente la misma lista.
       estado.generador.supuestos = supuestos(estado.generador);
+      estado.generador.segundaFuente = contrastar(estado.generador);
       dimensionado = true;
       renderizarResultados(estado.generador);
       mostrarEstado('estadoGenerador', 'Generador dimensionado correctamente.', 'ok');
@@ -472,11 +480,131 @@
       limpiarResultadosGenerador();
       mostrarEstado('estadoGenerador', 'Error: ' + err.message, 'error');
     }
+    avisarConversion();
+  }
+
+  // Contraste con la segunda fuente: la consultada en línea en esta sesión o,
+  // si no hay, la guardada en la base local junto al sitio.
+  function contrastar(g) {
+    const sitio = g.sitio;
+    if (!sitio || sitio.casoPrueba) return null;
+    const segunda = segundasEnLinea[sitio.id] || sitio.segundaFuente || null;
+    if (!segunda) return null;
+    try {
+      return D.contrastarSegundaFuente(sitio, segunda, g.criterioRecurso, g.potenciaPicoKWp);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Plano de NASA POWER más parecido a la inclinación del sitio.
+  function planoNasaParaSitio(sitio) {
+    let mejor = 'latitud', menor = Infinity;
+    Object.keys(PLANOS_NASA).forEach(k => {
+      const d = Math.abs(PLANOS_NASA[k].angulo(sitio.latitud) - sitio.inclinacionGrados);
+      if (d < menor) { menor = d; mejor = k; }
+    });
+    return mejor;
+  }
+
+  function renderizarSegundaFuente(g) {
+    const caja = $('segundaFuenteGenerador');
+    const sitio = g.sitio;
+    const c = g.segundaFuente;
+    const boton = '<button type="button" class="btn btn-secondary btn-small" id="btnSegundaFuente">Consultar NASA POWER para este sitio</button>';
+    let html = '<h2>Contraste con una segunda fuente</h2>';
+    if (sitio.casoPrueba) {
+      html += '<p class="nota">El caso de prueba trae valores declarados; no se contrasta con otra fuente.</p>';
+    } else if (sitio.consultaEnLinea) {
+      html += '<p class="nota">El recurso de este sitio ya viene de NASA POWER. Para contrastarlo, elija en la lista un sitio de la base local (PVGIS) en la misma ubicación.</p>';
+    } else if (!c) {
+      html += '<p class="nota">Este sitio no tiene todavía una segunda fuente guardada. Consulte NASA POWER para comparar la irradiación y la potencia pico.</p>' + boton;
+    } else {
+      const est = c.dentroDeTolerancia ? 'cumple' : 'no_cumple';
+      const signo = v => (v >= 0 ? '+' : '') + fmt(v, 1) + ' %';
+      const usado = c.criterioRecurso === 'anual' ? 'promedio anual' : 'mes de menor recurso';
+      html += `
+        <div class="table-wrap"><table class="tabla-contraste">
+          <thead><tr><th>Dato</th><th>${escapar(fuenteBreve(sitio.fuente))}</th><th>${escapar(fuenteBreve(c.fuente))}</th><th>Diferencia</th></tr></thead>
+          <tbody>
+            <tr><td>Irradiación promedio anual</td><td>${fmt(c.anual.principal, 2)} kWh/m²·día</td><td>${fmt(c.anual.segunda, 2)} kWh/m²·día</td><td>${signo(c.anual.difPct)}</td></tr>
+            <tr><td>Mes de menor recurso</td><td>${fmt(c.critico.principal, 2)} (${escapar(c.critico.mesPrincipal)})</td><td>${fmt(c.critico.segunda, 2)} (${escapar(c.critico.mesSegunda)})</td><td>${signo(c.critico.difPct)}</td></tr>
+            <tr class="is-selected"><td><strong>Potencia pico</strong> (${usado})</td><td><strong>${fmt(c.potencia.principal, 2)} kWp</strong></td><td><strong>${fmt(c.potencia.segunda, 2)} kWp</strong></td><td class="estado-${est}"><strong>${signo(c.potencia.difPct)}</strong></td></tr>
+          </tbody>
+        </table></div>
+        <p class="veredicto-contraste estado-${est}">${c.dentroDeTolerancia
+          ? '✓ La potencia pico con la segunda fuente difiere ' + signo(c.potencia.difPct) + ': está dentro de la diferencia aceptada de ±' + c.toleranciaPct + ' %.'
+          : '✗ La potencia pico con la segunda fuente difiere ' + signo(c.potencia.difPct) + ': supera la diferencia aceptada de ±' + c.toleranciaPct + ' %. Revise el sitio, la inclinación o la fuente.'}</p>
+        <p class="nota">Segunda fuente: ${escapar(c.fuente)}${c.fechaConsulta ? ' · consulta ' + escapar(c.fechaConsulta) : ''}${c.enLinea ? ' (consultada en línea en esta sesión)' : ' (guardada en la base local)'}. La potencia pico es inversa a la irradiación: Ppico₂ = Ppico₁ · HSP₁ / HSP₂.</p>
+        ${boton}`;
+    }
+    html += '<p class="status" id="estadoSegundaFuente" role="status"></p>';
+    caja.innerHTML = html;
+    caja.hidden = false;
+    const btn = $('btnSegundaFuente');
+    if (btn) btn.addEventListener('click', () => consultarSegundaFuente(sitio));
+  }
+
+  function fuenteBreve(fuente) {
+    const t = String(fuente || '');
+    if (/PVGIS/i.test(t)) return 'PVGIS (principal)';
+    if (/NASA/i.test(t)) return 'NASA POWER';
+    return t.split(/[,(]/)[0].trim() || 'Fuente principal';
+  }
+
+  async function consultarSegundaFuente(sitio) {
+    const plano = planoNasaParaSitio(sitio);
+    mostrarEstado('estadoSegundaFuente', 'Consultando NASA POWER…', '');
+    try {
+      if (typeof window.fetch !== 'function') throw new Error('este navegador no permite consultas en línea');
+      const r = await consultarNasaPower(sitio.latitud, sitio.longitud, plano);
+      segundasEnLinea[sitio.id] = {
+        fuente: r.fuente.replace(', consulta en línea', ''),
+        inclinacionGrados: r.inclinacionGrados,
+        irradiacionAnual: r.irradiacionAnual,
+        mensual: r.mensual,
+        fechaConsulta: r.fechaConsulta,
+        enLinea: true,
+      };
+      dimensionar(true);
+      mostrarEstado('estadoSegundaFuente', 'Contraste actualizado con la consulta en línea (plano a ' + fmt(r.inclinacionGrados, 1) + '°).', 'ok');
+    } catch (err) {
+      mostrarEstado('estadoSegundaFuente', 'No se pudo consultar NASA POWER (' + (err.message || 'error de red') + ').' +
+        (sitio.segundaFuente ? ' Se mantiene el contraste con los valores guardados en la base local.' : ' Intente más tarde; el dimensionamiento no cambia.'), 'error');
+    }
+  }
+
+  function avisarConversion() {
+    if (window.UIConversion) window.UIConversion.alCambiarGenerador();
   }
 
   function limpiarResultadosGenerador() {
     estado.generador = null;
     $('resultadosGenerador').hidden = true;
+  }
+
+  function aplicarAjusteConversion(ajuste) {
+    // El ajuste conserva el módulo que ya se había elegido: agregar paneles o
+    // reorganizarlos no debe cambiar la referencia del panel.
+    ajusteConversion = ajuste && (ajuste.potenciaMinimaKWp > 0 || ajuste.modulosSerieFijo > 0)
+      ? { potenciaMinimaKWp: ajuste.potenciaMinimaKWp || null, modulosSerieFijo: ajuste.modulosSerieFijo || null,
+          moduloId: ajuste.moduloId || (estado.generador && estado.generador.seleccion ? estado.generador.seleccion.modulo.id : null) }
+      : null;
+    dimensionar(true);
+  }
+
+  function renderizarAjuste(g) {
+    const caja = $('ajusteConversion');
+    if (!ajusteConversion) { caja.hidden = true; caja.innerHTML = ''; return; }
+    const partes = [];
+    if (g.ajustePorCierre) partes.push('se dimensiona con <strong>' + fmt(g.potenciaDimensionadoKWp, 2) + ' kWp</strong>, la potencia requerida por el balance de cierre (la calculada aquí es ' + fmt(g.potenciaPicoKWp, 2) + ' kWp)');
+    if (g.modulosSerieFijo) partes.push('se usan <strong>' + g.modulosSerieFijo + ' módulos en serie</strong> por cadena para que el equipo de conversión los admita');
+    if (ajusteConversion.moduloId && g.seleccion && g.seleccion.modulo.id === ajusteConversion.moduloId && $('genCriterioModulo').value !== 'manual') partes.push('se mantiene el módulo ' + g.seleccion.modulo.fabricante + ' ' + g.seleccion.modulo.modelo);
+    if (partes.length === 0) partes.push('el ajuste ya no cambia el generador, porque la potencia calculada aquí es mayor que la requerida');
+    caja.innerHTML = '<strong>Ajuste aceptado en el paso de conversión y almacenamiento:</strong> ' + partes.join('; ') + '. ' +
+      '<button type="button" class="btn-enlace" id="btnQuitarAjuste">Quitar ajuste</button>';
+    caja.hidden = false;
+    $('btnQuitarAjuste').addEventListener('click', () => aplicarAjusteConversion(null));
   }
 
   function recalcularSiCorresponde() {
@@ -490,59 +618,60 @@
       ? 'promedio anual'
       : 'mes crítico (' + g.recurso.mesCritico.nombre + ')';
 
-    // Advertencias (RF-22, RF-24)
+    // Advertencias
     const avisos = g.advertencias.slice();
     if (g.contingencia) avisos.unshift('La consulta en línea falló (' + g.contingencia.motivo + '); se usó la base de datos local.');
     $('avisosGenerador').innerHTML = avisos.length
       ? '<strong>Advertencias:</strong><ul>' + avisos.map(a => '<li>' + escapar(a) + '</li>').join('') + '</ul>'
       : '';
     $('avisosGenerador').hidden = avisos.length === 0;
+    renderizarAjuste(g);
 
-    // Resultado principal (RF-18, RF-19)
+    // Resultado principal
     $('indicadoresGenerador').innerHTML = tarjetas([
-      ['Potencia pico ' + (g.metodo.id === 'balance' ? 'de diseño' : 'necesaria'), g.potenciaPicoKWp.toFixed(2) + ' kWp', 'por ' + etiquetaRecurso + (g.metodo.id === 'balance' ? ' · método propio' : '')],
-      ['Irradiación usada', g.hspUsada.toFixed(2) + ' kWh/m²', 'por día · PR ' + g.pr.toFixed(2)],
+      ['Potencia pico ' + (g.metodo.id === 'balance' ? 'de diseño' : 'necesaria'), fmt(g.potenciaPicoKWp, 2) + ' kWp', 'por ' + etiquetaRecurso + (g.metodo.id === 'balance' ? ' · método propio' : '')],
+      ['Irradiación usada', fmt(g.hspUsada, 2) + ' kWh/m²', 'por día · PR ' + fmt(g.pr, 2)],
       ['Módulos', s.numeroModulos + ' × ' + m.potenciaW + ' Wp', m.fabricante + ' ' + m.modelo],
-      ['Potencia instalada', (s.potenciaInstaladaW / 1000).toFixed(2) + ' kWp', (s.excedenteW >= 0 ? '+' : '') + (s.excedenteW / 1000).toFixed(3) + ' kWp (' + (s.excedentePct >= 0 ? '+' : '') + s.excedentePct.toFixed(1) + ' %)'],
-      ['Energía generada', g.energiaGeneradaDiariaKWh.toFixed(2) + ' kWh/día', 'cubre el ' + g.coberturaPct.toFixed(0) + ' % de Ed (prom. anual)'],
+      ['Potencia instalada', fmt(s.potenciaInstaladaW / 1000, 2) + ' kWp', (s.excedenteW >= 0 ? '+' : '') + fmt(s.excedenteW / 1000, 3) + ' kWp (' + (s.excedentePct >= 0 ? '+' : '') + fmt(s.excedentePct, 1) + ' %)'],
+      ['Energía generada', fmt(g.energiaGeneradaDiariaKWh, 2) + ' kWh/día', 'cubre el ' + fmt(g.coberturaPct, 0) + ' % de Ed (prom. anual)'],
     ]);
 
     const mt = g.metodo;
     if (mt.id === 'balance') {
       $('comparacionMetodo').innerHTML =
         '<strong>Método propio: balance día/noche con factor de crecimiento y meta de cobertura.</strong>' + (mt.etaBat === 1 ? ' Sin almacenamiento (η_bat = 1).' : '') + '<br>' +
-        'E_eq = E_día + E_noche / η_bat = ' + mt.eDiaKWh.toFixed(3) + ' + ' + mt.eNocheKWh.toFixed(3) + ' / ' + mt.etaBat.toFixed(2) +
-        ' = <strong>' + mt.energiaEquivalenteKWh.toFixed(3) + ' kWh/día</strong>. ' +
-        'Fc = 1 + g = ' + mt.fc.toFixed(2) + ' · Cob = ' + mt.coberturaPct + ' % → E_diseño = Fc · Cob · E_eq = <strong>' + mt.energiaDisenoKWh.toFixed(3) + ' kWh/día</strong>.<br>' +
-        'Potencia pico con la misma irradiación: método de referencia <strong>' + mt.potenciaReferenciaKWp.toFixed(2) + ' kWp</strong> · ' +
-        'balance sin crecimiento <strong>' + mt.potenciaBalanceKWp.toFixed(2) + ' kWp</strong> · ' +
-        'diseño con crecimiento y cobertura <strong>' + mt.potenciaDisenoKWp.toFixed(2) + ' kWp</strong>.';
+        'E_eq = E_día + E_noche / η_bat = ' + fmt(mt.eDiaKWh, 3) + ' + ' + fmt(mt.eNocheKWh, 3) + ' / ' + fmt(mt.etaBat, 2) +
+        ' = <strong>' + fmt(mt.energiaEquivalenteKWh, 3) + ' kWh/día</strong>. ' +
+        'Fc = 1 + g = ' + fmt(mt.fc, 2) + ' · Cob = ' + mt.coberturaPct + ' % → E_diseño = Fc · Cob · E_eq = <strong>' + fmt(mt.energiaDisenoKWh, 3) + ' kWh/día</strong>.<br>' +
+        'Potencia pico con la misma irradiación: método de referencia <strong>' + fmt(mt.potenciaReferenciaKWp, 2) + ' kWp</strong> · ' +
+        'balance sin crecimiento <strong>' + fmt(mt.potenciaBalanceKWp, 2) + ' kWp</strong> · ' +
+        'diseño con crecimiento y cobertura <strong>' + fmt(mt.potenciaDisenoKWp, 2) + ' kWp</strong>.';
       $('comparacionMetodo').hidden = false;
     } else {
       $('comparacionMetodo').innerHTML = '';
       $('comparacionMetodo').hidden = true;
     }
 
-    const comparacion = 'Por promedio anual se requieren <strong>' + g.potenciaPicoAnualKWp.toFixed(2) + ' kWp</strong>; por el mes de menor recurso, <strong>' + g.potenciaPicoCriticoKWp.toFixed(2) + ' kWp</strong>. ';
+    const comparacion = 'Por promedio anual se requieren <strong>' + fmt(g.potenciaPicoAnualKWp, 2) + ' kWp</strong>; por el mes de menor recurso, <strong>' + fmt(g.potenciaPicoCriticoKWp, 2) + ' kWp</strong>. ';
     const porQue = g.modoSeleccion === 'manual'
       ? 'La referencia se eligió manualmente.'
       : 'Criterio de selección: <strong>' + escapar(g.criterio.nombre) + '</strong>. ' + escapar(g.criterio.explicacion);
     $('explicacionSeleccion').innerHTML = comparacion + porQue;
 
-    // Configuración eléctrica (RF-19, RF-20, RF-21, RF-22)
+    // Configuración eléctrica
     $('configuracionGenerador').innerHTML = tarjetas([
       ['Configuración', s.cadenasParalelo + (s.cadenasParalelo === 1 ? ' cadena' : ' cadenas') + ' de ' + s.modulosSerie, 'máx. ' + s.maxModulosSerie + ' en serie con ' + g.parametros.vMaxSistema + ' V'],
-      ['Voc del generador', s.vocGeneradorTminV.toFixed(1) + ' V', 'a ' + g.parametros.tMinC + ' °C (módulo ' + s.vocModuloTminV.toFixed(2) + ' V)'],
-      ['Vmp del generador', s.vmpGeneradorOperacionV.toFixed(1) + ' V', 'celda a ' + s.temperaturaCeldaC.toFixed(1) + ' °C'],
-      ['Isc del generador', s.iscGeneradorA.toFixed(1) + ' A', s.cadenasParalelo + ' × ' + m.iscA + ' A'],
-      ['Corriente de diseño', s.corrienteDisenoA.toFixed(1) + ' A', '1,25 × 1,25 × Isc (NTC 2050)'],
-      ['Área ocupada', s.areaGeneradorM2.toFixed(2) + ' m²', s.cabeEnArea ? 'cabe en ' + g.parametros.areaDisponibleM2 + ' m²' : 'NO cabe en ' + g.parametros.areaDisponibleM2 + ' m²'],
+      ['Voc del generador', fmt(s.vocGeneradorTminV, 1) + ' V', 'a ' + g.parametros.tMinC + ' °C (módulo ' + fmt(s.vocModuloTminV, 2) + ' V)'],
+      ['Vmp del generador', fmt(s.vmpGeneradorOperacionV, 1) + ' V', 'celda a ' + fmt(s.temperaturaCeldaC, 1) + ' °C'],
+      ['Isc del generador', fmt(s.iscGeneradorA, 1) + ' A', s.cadenasParalelo + ' × ' + fv(m.iscA) + ' A'],
+      ['Corriente de diseño', fmt(s.corrienteDisenoA, 1) + ' A', '1,25 × 1,25 × Isc (NTC 2050)'],
+      ['Área ocupada', fmt(s.areaGeneradorM2, 2) + ' m²', s.cabeEnArea ? 'cabe en ' + g.parametros.areaDisponibleM2 + ' m²' : 'NO cabe en ' + g.parametros.areaDisponibleM2 + ' m²'],
     ]);
 
     // Catálogo evaluado (filtrar, seleccionar, cuantificar)
     $('cuerpoCatalogo').innerHTML = g.evaluaciones.map(e => {
       const mod = e.modulo;
-      const nombre = escapar(mod.fabricante + ' ' + mod.modelo) + (mod.referenciaTdR ? ' <span class="etiqueta-ref">referencia TdR</span>' : '');
+      const nombre = escapar(mod.fabricante + ' ' + mod.modelo) + (mod.referenciaTdR ? ' <span class="etiqueta-ref">caso de prueba</span>' : '');
       if (!e.viable) {
         return `<tr class="fila-descartada"><td>${nombre}</td><td>${mod.potenciaW}</td><td>${e.maxModulosSerie}</td><td colspan="5">—</td><td>Descartado: ${escapar(e.motivoDescarte)}</td></tr>`;
       }
@@ -550,11 +679,13 @@
       if (e.cabeEnArea === false) estadoFila += ' · no cabe';
       return `<tr class="${e.id === s.id ? 'is-selected' : ''}">
         <td>${nombre}</td><td>${mod.potenciaW}</td><td>${e.maxModulosSerie}</td><td>${e.numeroModulos}</td>
-        <td>${e.cadenasParalelo} × ${e.modulosSerie}</td><td>${(e.potenciaInstaladaW / 1000).toFixed(3)} kWp</td>
-        <td>${e.excedentePct >= 0 ? '+' : ''}${e.excedentePct.toFixed(1)} %</td><td>${e.areaGeneradorM2.toFixed(2)} m²</td><td>${estadoFila}</td></tr>`;
+        <td>${e.cadenasParalelo} × ${e.modulosSerie}</td><td>${fmt(e.potenciaInstaladaW / 1000, 3)} kWp</td>
+        <td>${e.excedentePct >= 0 ? '+' : ''}${fmt(e.excedentePct, 1)} %</td><td>${fmt(e.areaGeneradorM2, 2)} m²</td><td>${estadoFila}</td></tr>`;
     }).join('');
 
-    // Supuestos (RF-18: todos visibles)
+    renderizarSegundaFuente(g);
+
+    // Supuestos (todos visibles)
     $('listaSupuestos').innerHTML = (g.supuestos || []).map(sp => '<li>' + escapar(sp.texto) + '</li>').join('');
 
     $('resultadosGenerador').hidden = false;
@@ -564,22 +695,22 @@
     const s = g.seleccion;
     return [
       g.metodo.id === 'balance'
-        ? { id: 'potencia', texto: 'Potencia pico (método propio): Ppico = Fc · E_eq / (HSP · PR) = ' + g.metodo.fc.toFixed(2) + ' · ' + g.metodo.energiaEquivalenteKWh.toFixed(3) + ' / (' + g.hspUsada.toFixed(2) + ' · ' + g.pr.toFixed(2) + ') = ' + g.potenciaPicoKWp.toFixed(3) + ' kWp. Con el método de referencia serían ' + g.metodo.potenciaReferenciaKWp.toFixed(3) + ' kWp.' }
-        : { id: 'potencia', texto: 'Potencia pico: Ppico = Ed / (HSP · PR) = ' + estado.resultados.energiaDiariaKWh.toFixed(3) + ' / (' + g.hspUsada.toFixed(2) + ' · ' + g.pr.toFixed(2) + ') = ' + g.potenciaPicoKWp.toFixed(3) + ' kWp.' },
+        ? { id: 'potencia', texto: 'Potencia pico (método propio): Ppico = Fc · E_eq / (HSP · PR) = ' + fmt(g.metodo.fc, 2) + ' · ' + fmt(g.metodo.energiaEquivalenteKWh, 3) + ' / (' + fmt(g.hspUsada, 2) + ' · ' + fmt(g.pr, 2) + ') = ' + fmt(g.potenciaPicoKWp, 3) + ' kWp. Con el método de referencia serían ' + fmt(g.metodo.potenciaReferenciaKWp, 3) + ' kWp.' }
+        : { id: 'potencia', texto: 'Potencia pico: Ppico = Ed / (HSP · PR) = ' + fmt(estado.resultados.energiaDiariaKWh, 3) + ' / (' + fmt(g.hspUsada, 2) + ' · ' + fmt(g.pr, 2) + ') = ' + fmt(g.potenciaPicoKWp, 3) + ' kWp.' },
       ...(g.metodo.id === 'balance' ? [
-        { id: 'balance', texto: 'Energía equivalente: E_eq = E_día + E_noche / η_bat = ' + g.metodo.eDiaKWh.toFixed(3) + ' + ' + g.metodo.eNocheKWh.toFixed(3) + ' / ' + g.metodo.etaBat.toFixed(2) + ' = ' + g.metodo.energiaEquivalenteKWh.toFixed(3) + ' kWh/día. ' + (g.metodo.etaBat === 1 ? 'Sin almacenamiento (η_bat = 1): la energía nocturna se cuenta sin pérdidas porque la cubre otra fuente.' : 'Se supone que toda la energía nocturna pasa por la batería y que la diurna se consume directo.') },
-        { id: 'etaBat', texto: 'Eficiencia de ida y vuelta de la batería η_bat = ' + g.metodo.etaBat.toFixed(2) + (g.fuenteEtaBat ? '. Fuente: ' + g.fuenteEtaBat : '') + '.' },
-        { id: 'crecimiento', texto: 'Factor de crecimiento Fc = 1 + g = ' + g.metodo.fc.toFixed(2) + ' (g = ' + g.metodo.crecimientoPct + ' %)' + (g.justificacionCrecimiento ? '. Justificación: ' + g.justificacionCrecimiento : (g.metodo.crecimientoPct > 0 ? '. Sin justificación registrada' : '')) + '.' },
+        { id: 'balance', texto: 'Energía equivalente: E_eq = E_día + E_noche / η_bat = ' + fmt(g.metodo.eDiaKWh, 3) + ' + ' + fmt(g.metodo.eNocheKWh, 3) + ' / ' + fmt(g.metodo.etaBat, 2) + ' = ' + fmt(g.metodo.energiaEquivalenteKWh, 3) + ' kWh/día. ' + (g.metodo.etaBat === 1 ? 'Sin almacenamiento (η_bat = 1): la energía nocturna se cuenta sin pérdidas porque la cubre otra fuente.' : 'Se supone que toda la energía nocturna pasa por la batería y que la diurna se consume directo.') },
+        { id: 'etaBat', texto: 'Eficiencia de ida y vuelta de la batería η_bat = ' + fmt(g.metodo.etaBat, 2) + (g.fuenteEtaBat ? '. Fuente: ' + g.fuenteEtaBat : '') + '.' },
+        { id: 'crecimiento', texto: 'Factor de crecimiento Fc = 1 + g = ' + fmt(g.metodo.fc, 2) + ' (g = ' + g.metodo.crecimientoPct + ' %)' + (g.justificacionCrecimiento ? '. Justificación: ' + g.justificacionCrecimiento : (g.metodo.crecimientoPct > 0 ? '. Sin justificación registrada' : '')) + '.' },
         { id: 'cobertura', texto: 'Meta de cobertura Cob = ' + g.metodo.coberturaPct + ' % de la energía (kWh) que consumen las cargas; se aplica a la energía y no al valor de la factura. ' + (g.metodo.coberturaPct < 100 ? 'El resto lo debe cubrir otra fuente (red o planta).' : 'El generador cubre toda la energía.') },
       ] : []),
-      { id: 'pr', texto: 'El factor global de desempeño (PR = ' + g.pr.toFixed(2) + ') agrupa las pérdidas por temperatura, suciedad, cableado y conversión.' },
+      { id: 'pr', texto: 'El factor global de desempeño (PR = ' + fmt(g.pr, 2) + ') agrupa las pérdidas por temperatura, suciedad, cableado y conversión.' },
       { id: 'recurso', texto: 'Recurso solar: ' + g.sitio.nombre + ', irradiación sobre el plano del generador (' + g.sitio.inclinacionGrados + '°, azimut ' + g.sitio.azimutGrados + '°). Fuente: ' + g.sitio.fuente + ' (' + g.sitio.fechaConsulta + ').' },
-      { id: 'voc', texto: 'Voc corregido a la temperatura mínima: Voc · [1 + β (Tmin − 25)], con β = ' + s.modulo.coefVocPctC + ' %/°C.' },
-      { id: 'celda', texto: 'Temperatura de celda con el modelo ' + s.modulo.tipoTemperaturaNominal + ': Tamb + (' + s.modulo.tipoTemperaturaNominal + ' − 20) / 800 · 1000 W/m² = ' + s.temperaturaCeldaC.toFixed(1) + ' °C.' },
+      { id: 'voc', texto: 'Voc corregido a la temperatura mínima: Voc · [1 + β (Tmin − 25)], con β = ' + fv(s.modulo.coefVocPctC) + ' %/°C.' },
+      { id: 'celda', texto: 'Temperatura de celda con el modelo ' + s.modulo.tipoTemperaturaNominal + ': Tamb + (' + s.modulo.tipoTemperaturaNominal + ' − 20) / 800 · 1000 W/m² = ' + fmt(s.temperaturaCeldaC, 1) + ' °C.' },
       { id: 'vmp', texto: 'Vmp en operación corregido con el coeficiente de temperatura de la tensión (β).' },
       { id: 'corriente', texto: 'Corriente de diseño = 1,25 · 1,25 · Isc del generador, según NTC 2050 art. 690-8.' },
       { id: 'cadenas', texto: 'Todas las cadenas tienen el mismo número de módulos.' },
-      { id: 'energia', texto: 'La energía generada se estima con el promedio anual: Pinstalada · HSPanual · PR. En el mes crítico serían ' + g.energiaGeneradaMesCriticoKWh.toFixed(2) + ' kWh/día (' + g.coberturaMesCriticoPct.toFixed(0) + ' % de Ed).' },
+      { id: 'energia', texto: 'La energía generada se estima con el promedio anual: Pinstalada · HSPanual · PR. En el mes crítico serían ' + fmt(g.energiaGeneradaMesCriticoKWh, 2) + ' kWh/día (' + fmt(g.coberturaMesCriticoPct, 0) + ' % de Ed).' },
       { id: 'modulo', texto: 'Módulo: ' + s.modulo.fabricante + ' ' + s.modulo.modelo + '. Ficha técnica: ' + s.modulo.fuente + ' (consulta ' + s.modulo.fechaConsulta + ').' },
     ];
   }
@@ -637,7 +768,7 @@
   // ---------------------------------------------------------------------
   function alCambiarConsumo() {
     renderizarHeredados();
-    if (!estado.resultados) { limpiarResultadosGenerador(); return; }
+    if (!estado.resultados) { limpiarResultadosGenerador(); avisarConversion(); return; }
     recalcularSiCorresponde();
   }
 
@@ -661,6 +792,7 @@
       justificacionCrecimiento: $('genJustCrecimiento').value,
       sitiosConsultados: datos.sitiosConsultados,
       dimensionado,
+      ajusteConversion,
     };
   }
 
@@ -671,6 +803,7 @@
     actualizarContadorJustificacion();
     if (!cfg) {
       // Un proyecto sin configuración del generador vuelve al método de referencia.
+      ajusteConversion = null;
       $('genMetodo').value = 'referencia';
       $('genCrecimiento').value = 0;
       $('genCobertura').value = 100;
@@ -701,6 +834,8 @@
     $('campoModuloManual').hidden = $('genCriterioModulo').value !== 'manual';
     renderizarRecurso();
     renderizarHeredados();
+    ajusteConversion = cfg.ajusteConversion && (cfg.ajusteConversion.potenciaMinimaKWp > 0 || cfg.ajusteConversion.modulosSerieFijo > 0)
+      ? cfg.ajusteConversion : null;
     if (cfg.dimensionado) dimensionar(true);
   }
 
@@ -709,6 +844,8 @@
     obtenerConfiguracion,
     aplicarConfiguracion,
     dimensionar,
+    aplicarAjusteConversion,
+    obtenerAjusteConversion: () => ajusteConversion,
     datosListos: cargarDatos(),
   };
 

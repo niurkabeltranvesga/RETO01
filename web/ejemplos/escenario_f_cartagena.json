@@ -1,0 +1,73 @@
+{
+  "version": "1.0-web",
+  "nombreProyecto": "Escenario F — Cafetería y tienda de alimentos en Cartagena",
+  "integrantes": "Miguel Bernal, Niurka Beltrán",
+  "fecha": "25/10/2026",
+  "contexto": "on-grid",
+  "parametros": {
+    "diasOperacionMes": 30,
+    "diasOperacionAnio": 365,
+    "costoUnitarioCU": 1200,
+    "horaInicioDia": 6,
+    "horaFinDia": 18
+  },
+  "cargas": [
+    {
+      "descripcion": "Vitrinas refrigeradas",
+      "cantidad": 3,
+      "potenciaUnitariaW": 250,
+      "horario": [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+    },
+    {
+      "descripcion": "Congelador",
+      "cantidad": 1,
+      "potenciaUnitariaW": 300,
+      "horario": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
+    },
+    {
+      "descripcion": "Iluminación LED",
+      "cantidad": 24,
+      "potenciaUnitariaW": 18,
+      "horario": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+    },
+    {
+      "descripcion": "Aire acondicionado inverter 18 000 BTU/h",
+      "cantidad": 1,
+      "potenciaUnitariaW": 1200,
+      "horario": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "descripcion": "Cajas registradoras y computadores",
+      "cantidad": 2,
+      "potenciaUnitariaW": 80,
+      "horario": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
+    },
+    {
+      "descripcion": "Bomba presurizadora de cisterna 1 HP",
+      "cantidad": 1,
+      "potenciaUnitariaW": 1100,
+      "horario": [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+    }
+  ],
+  "generador": {
+    "sitioId": "cartagena-bolivar",
+    "criterioRecurso": "anual",
+    "pr": 0.7,
+    "vMaxSistema": 600,
+    "tMinC": 18,
+    "tAmbOperacionC": 32,
+    "areaDisponibleM2": 70,
+    "criterioModulo": "menor_excedente",
+    "moduloManualId": "",
+    "sitiosConsultados": [],
+    "dimensionado": true,
+    "justificacionGrupo": "Sistema on-grid: se dimensiona con el promedio anual porque la red cubre los meses de menor recurso. Plano a 10° (cercano a la latitud) mirando al sur, como en la consulta PVGIS. Tmin 18 °C y Tamb 32 °C: mínima récord y máxima media más alta de Cartagena (IDEAM 1991-2020). PR 0,70, valor de referencia del curso."
+  },
+  "conversion": {
+    "rama": "sin",
+    "ramaElegidaPorUsuario": false,
+    "etaInv": 0.9,
+    "dcAcMin": 1.0,
+    "dcAcMax": 1.3
+  }
+}

@@ -1,20 +1,25 @@
-# RETO 01 y RETO 02 · Energía Solar Fotovoltaica
+# Plataforma de dimensionamiento fotovoltaico · Energía Solar Fotovoltaica
+
+**Versión 1.0.0 (26/10/2026)** · ver [CHANGELOG.md](CHANGELOG.md)
 
 Universidad del Magdalena · Electiva ESFV 2026-II
 Integrantes: Niurka Beltrán Vesga, Miguel Ángel Bernal López
 
 - **Reto 01:** caracterización del consumo energético (cuadro de cargas, perfil horario, energía y costos).
 - **Reto 02:** dimensionamiento del generador fotovoltaico (potencia pico, número de módulos, configuración en cadenas, tensiones, corrientes, área e informe), integrado en la misma aplicación web.
+- **Reto 03:** dimensionamiento del regulador o inversor MPPT y del banco de baterías (con y sin almacenamiento, balance de cierre e informe), integrado en la misma aplicación web.
+- **Reto 04:** entrega formal de la plataforma: despliegue en línea, escenario del grupo F (Cartagena) precargado, contraste con una segunda fuente, informe de una página, exportación CSV/JSON, validaciones, pruebas, ayuda integrada y versionado.
 
-### 🌐 Aplicación Web (Reto 01 + Reto 02)
+### 🌐 Aplicación Web (Retos 01 a 04)
 Puedes acceder a la app web desplegada a través del siguiente enlace:
 - [Ver Aplicación Web](https://niurkabeltranvesga.github.io/RETO01/web/)
 
 También se puede abrir sin internet con doble clic en `web/index_standalone.html` (versión de un solo archivo).
 
 La documentación de la aplicación web está en la carpeta `web/docs/`:
-- `web/docs/README.md`: dependencias, cómo ejecutarla, versión, qué hace falta para que la API funcione y dónde está cada entregable del Reto 02.
-- `web/docs/DECISIONES.md`: decisión de diseño sobre la consulta en línea del recurso solar.
+- `web/docs/README.md`: arquitectura, dependencias, despliegue, fuentes de datos, formato de números, validaciones, limitaciones, pruebas y dónde está cada entregable de los Retos 02 a 04.
+- `web/docs/MANUAL_USUARIO.md`: manual de usuario (también como ayuda integrada en la aplicación).
+- `web/docs/DECISIONES.md`: decisiones de diseño (consulta en línea del recurso solar, escenario F, arranque de motores y formato de números).
 - `web/docs/METODO_PROPIO.md`: método propio para la potencia pico.
 
 ---
@@ -41,12 +46,12 @@ Para computadoras sin MATLAB, se requiere instalar previamente el motor de ejecu
 ---
 
 ## 📁 Estructura del Proyecto
-* `web/`: Aplicación web interactiva (Reto 01 y Reto 02), desplegada en GitHub Pages.
-  * `web/datos/`: catálogo de módulos y base de datos de sitios (recurso solar).
+* `web/`: Aplicación web interactiva (Retos 01 a 04), desplegada en GitHub Pages.
+  * `web/datos/`: catálogo de módulos, catálogo de equipos de conversión y baterías, y base de datos de sitios (recurso solar).
   * `web/docs/`: documentación de la aplicación web.
-  * `web/ejemplos/`: caso de prueba del TdR, caso propio (Distrimedical) y ejemplos.
+  * `web/ejemplos/`: proyectos `.json` que se abren con "Cargar proyecto desde archivo": escenario F (Cartagena), caso de prueba estandarizado, caso propio (Distrimedical) y ejemplos.
   * `web/informes/`: informes generados por la aplicación.
-  * `web/test/`: pruebas automáticas de la aplicación web.
+  * `web/test/`: pruebas automáticas de la aplicación web (`node test/ejecutar_todas.js`).
 * `gui/`: Archivos de la interfaz de escritorio, código fuente `.m`, ejecutable directo e instalador de Runtime.
 * `src/`: Funciones de cálculo matemático, lógica y generación de reportes.
 * `test/`: Pruebas unitarias y validaciones del sistema.

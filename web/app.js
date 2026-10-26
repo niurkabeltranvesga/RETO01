@@ -4,6 +4,21 @@
 (function () {
   'use strict';
   const M = window.MotorCalculo;
+  const fmt = M.formatoNumero;
+  const h2 = h => String(h).padStart(2, '0');
+
+  // Versión publicada de la plataforma (se muestra en la barra superior y en el informe).
+  const VERSION_APP = { numero: '1.0.0', fecha: '26/10/2026' };
+  window.VERSION_APP = VERSION_APP;
+  Array.from(document.querySelectorAll('[data-version]')).forEach(el => {
+    el.textContent = 'v' + VERSION_APP.numero + ' · ' + VERSION_APP.fecha;
+  });
+
+  // Lee un campo numérico; devuelve NaN si está vacío (Number('') sería 0).
+  function leerNumero(id) {
+    const texto = String(document.getElementById(id).value).trim();
+    return texto === '' ? NaN : Number(texto);
+  }
 
   // ESTADO DE LA APP 
   const estado = {
@@ -21,7 +36,8 @@
     filaEdicion: null, // índice de la carga que se está editando (null = modo "agregar")
     medicion: null,    // perfil cargado desde la hoja de datos del equipo (opcional)
     fuentePerfil: 'medido', // cuál perfil usar cuando hay medición y cargas a la vez
-    generador: null,        // resultado del dimensionamiento (Paso 4, Reto 02)
+    generador: null,        // resultado del dimensionamiento (Paso 4)
+    conversion: null,       // equipo de conversión y banco de baterías (Paso 5)
   };
 
   // El módulo de dimensionamiento (generador.js) se entera de cada cambio en
@@ -105,6 +121,7 @@
       } : null,
       fuentePerfil: estado.fuentePerfil,
       generador: window.UIGenerador ? window.UIGenerador.obtenerConfiguracion() : null,
+      conversion: window.UIConversion ? window.UIConversion.obtenerConfiguracion() : null,
     };
     const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -123,66 +140,73 @@
     lector.onload = () => {
       try {
         const datos = JSON.parse(lector.result);
-        const camposRequeridos = ['nombreProyecto', 'integrantes', 'fecha', 'contexto', 'cargas'];
-        for (const campo of camposRequeridos) {
-          if (!(campo in datos)) throw new Error('El archivo no contiene el campo obligatorio "' + campo + '".');
-        }
-
-        estado.proyecto = M.crearProyecto(datos.nombreProyecto, datos.integrantes, datos.fecha, datos.contexto);
-        estado.listaCargas = datos.cargas.map(c => M.crearCarga(c.descripcion, c.cantidad, c.potenciaUnitariaW, c.horario));
-        estado.proyecto.cargas = estado.listaCargas;
-
-        document.getElementById('nombreProyecto').value = estado.proyecto.nombreProyecto;
-        document.getElementById('integrantes').value = Array.isArray(estado.proyecto.integrantes) ? estado.proyecto.integrantes.join(', ') : estado.proyecto.integrantes;
-        document.getElementById('fechaProyecto').value = estado.proyecto.fecha;
-        document.getElementById('contexto').value = estado.proyecto.contexto;
-
-        if (datos.parametros) {
-          estado.parametros = datos.parametros;
-          document.getElementById('diasMes').value = estado.parametros.diasOperacionMes;
-          document.getElementById('diasAnio').value = estado.parametros.diasOperacionAnio;
-          document.getElementById('costoUnitario').value = estado.parametros.costoUnitarioCU;
-          document.getElementById('horaInicioDia').value = estado.parametros.horaInicioDia;
-          document.getElementById('horaFinDia').value = estado.parametros.horaFinDia;
-        }
-
-        // La medición es opcional y vive aparte del cuadro de cargas. Si el
-        // archivo trae una, se restaura; si no trae pero ya había una cargada
-        // en esta sesión, se conserva en vez de borrarla en silencio. En
-        // cualquier caso se le dice al usuario qué pasó con ella.
-        let notaMedicion = '';
-        if (datos.medicion && Array.isArray(datos.medicion.perfilW) && datos.medicion.perfilW.length === 24) {
-          estado.medicion = {
-            perfilW: datos.medicion.perfilW,
-            totalLecturas: datos.medicion.totalLecturas || 0,
-            horasSinDato: datos.medicion.horasSinDato || [],
-            potenciaEstimada: !!datos.medicion.potenciaEstimada,
-            avisos: datos.medicion.avisos || [],
-            archivo: datos.medicion.archivo || 'medición guardada',
-            fecha: datos.medicion.fecha || '',
-          };
-          estado.fuentePerfil = datos.fuentePerfil === 'estimado' ? 'estimado' : 'medido';
-          notaMedicion = ' Se restauró la medición guardada en el archivo (' + estado.medicion.archivo + ').';
-        } else if (estado.medicion) {
-          notaMedicion = ' Se conservó la medición que ya tenías cargada (' + estado.medicion.archivo +
-            '); si no corresponde a este proyecto, retírala en el Paso 2.';
-        }
-        document.getElementById('fuentePerfil').value = estado.fuentePerfil;
-        renderizarResumenMedicion();
-
-        actualizarTablaCargas();
-        calcularResultados(true);
-
-        if (window.UIGenerador) window.UIGenerador.aplicarConfiguracion(datos.generador || null);
-
-        mostrarEstado('estadoArchivo', 'Proyecto cargado desde: ' + archivo.name + '.' + notaMedicion, 'ok');
+        const nota = cargarProyectoDesdeDatos(datos);
+        mostrarEstado('estadoArchivo', 'Proyecto cargado desde: ' + archivo.name + '.' + nota, 'ok');
       } catch (err) {
-        mostrarEstado('estadoArchivo', 'Error al cargar: ' + err.message, 'error');
+        mostrarEstado('estadoArchivo', 'No se pudo cargar el archivo: ' + (err.name === 'SyntaxError' ? 'no es un archivo de proyecto válido (.json).' : err.message), 'error');
       }
       event.target.value = '';
     };
     lector.readAsText(archivo);
   });
+
+  // Aplica en toda la app un proyecto leído de un archivo .json.
+  // Devuelve una nota para el usuario sobre la medición.
+  function cargarProyectoDesdeDatos(datos) {
+    const camposRequeridos = ['nombreProyecto', 'integrantes', 'fecha', 'contexto', 'cargas'];
+    for (const campo of camposRequeridos) {
+      if (!(campo in datos)) throw new Error('El archivo no contiene el campo obligatorio "' + campo + '".');
+    }
+
+    estado.proyecto = M.crearProyecto(datos.nombreProyecto, datos.integrantes, datos.fecha, datos.contexto);
+    estado.listaCargas = datos.cargas.map(c => M.crearCarga(c.descripcion, c.cantidad, c.potenciaUnitariaW, c.horario));
+    estado.proyecto.cargas = estado.listaCargas;
+
+    document.getElementById('nombreProyecto').value = estado.proyecto.nombreProyecto;
+    document.getElementById('integrantes').value = Array.isArray(estado.proyecto.integrantes) ? estado.proyecto.integrantes.join(', ') : estado.proyecto.integrantes;
+    document.getElementById('fechaProyecto').value = estado.proyecto.fecha;
+    document.getElementById('contexto').value = estado.proyecto.contexto;
+
+    if (datos.parametros) {
+      estado.parametros = datos.parametros;
+      document.getElementById('diasMes').value = estado.parametros.diasOperacionMes;
+      document.getElementById('diasAnio').value = estado.parametros.diasOperacionAnio;
+      document.getElementById('costoUnitario').value = estado.parametros.costoUnitarioCU;
+      document.getElementById('horaInicioDia').value = estado.parametros.horaInicioDia;
+      document.getElementById('horaFinDia').value = estado.parametros.horaFinDia;
+    }
+
+    // La medición es opcional y vive aparte del cuadro de cargas. Si el
+    // archivo trae una, se restaura; si no trae pero ya había una cargada
+    // en esta sesión, se conserva en vez de borrarla en silencio. En
+    // cualquier caso se le dice al usuario qué pasó con ella.
+    let notaMedicion = '';
+    if (datos.medicion && Array.isArray(datos.medicion.perfilW) && datos.medicion.perfilW.length === 24) {
+      estado.medicion = {
+        perfilW: datos.medicion.perfilW,
+        totalLecturas: datos.medicion.totalLecturas || 0,
+        horasSinDato: datos.medicion.horasSinDato || [],
+        potenciaEstimada: !!datos.medicion.potenciaEstimada,
+        avisos: datos.medicion.avisos || [],
+        archivo: datos.medicion.archivo || 'medición guardada',
+        fecha: datos.medicion.fecha || '',
+      };
+      estado.fuentePerfil = datos.fuentePerfil === 'estimado' ? 'estimado' : 'medido';
+      notaMedicion = ' Se restauró la medición guardada en el archivo (' + estado.medicion.archivo + ').';
+    } else if (estado.medicion) {
+      notaMedicion = ' Se conservó la medición que ya tenías cargada (' + estado.medicion.archivo +
+        '); si no corresponde a este proyecto, retírala en el Paso 2.';
+    }
+    document.getElementById('fuentePerfil').value = estado.fuentePerfil;
+    renderizarResumenMedicion();
+
+    actualizarTablaCargas();
+    calcularResultados(true);
+
+    if (window.UIGenerador) window.UIGenerador.aplicarConfiguracion(datos.generador || null);
+    if (window.UIConversion) window.UIConversion.aplicarConfiguracion(datos.conversion || null);
+    return notaMedicion;
+  }
 
   //CARGAS
   const horarioGrid = document.getElementById('horarioGrid');
@@ -190,6 +214,36 @@
     const label = document.createElement('label');
     label.innerHTML = `<input type="checkbox" data-hora="${h}"> ${String(h).padStart(2, '0')}:00`;
     horarioGrid.appendChild(label);
+  }
+
+  // Franja rápida: marca de una vez las horas entre «desde» y «hasta».
+  const selDesde = document.getElementById('franjaDesde');
+  const selHasta = document.getElementById('franjaHasta');
+  if (selDesde && selHasta) {
+    for (let h = 0; h < 24; h++) selDesde.insertAdjacentHTML('beforeend', '<option value="' + h + '">' + h2(h) + ':00</option>');
+    for (let h = 1; h <= 24; h++) selHasta.insertAdjacentHTML('beforeend', '<option value="' + h + '">' + h2(h) + ':00</option>');
+    selDesde.value = '8';
+    selHasta.value = '12';
+    document.getElementById('btnMarcarFranja').addEventListener('click', () => {
+      try {
+        const desde = Number(selDesde.value), hasta = Number(selHasta.value);
+        const franja = M.franjaAHorario(desde, hasta);
+        franja.horario.forEach((v, h) => {
+          if (v === 1) horarioGrid.querySelector('input[data-hora="' + h + '"]').checked = true;
+        });
+        const texto = h2(desde) + ':00 a ' + h2(hasta) + ':00';
+        mostrarEstado('estadoFranja', franja.cruzaMedianoche
+          ? 'La hora final es anterior a la inicial: se marcó ' + texto + ' cruzando la medianoche (' + franja.horas + ' h). Si no era la intención, pulse «Limpiar horas» y corrija la franja.'
+          : 'Se marcaron ' + franja.horas + ' h (' + texto + '). Puede agregar otra franja si el aparato se usa en dos momentos del día.',
+          franja.cruzaMedianoche ? 'advertencia' : 'ok');
+      } catch (err) {
+        mostrarEstado('estadoFranja', err.message, 'error');
+      }
+    });
+    document.getElementById('btnLimpiarHoras').addEventListener('click', () => {
+      limpiarHorarioSeleccionado();
+      mostrarEstado('estadoFranja', '', '');
+    });
   }
 
   function leerHorarioSeleccionado() {
@@ -208,6 +262,7 @@
     document.getElementById('cantCarga').value = 1;
     document.getElementById('potCarga').value = 100;
     limpiarHorarioSeleccionado();
+    mostrarEstado('estadoFranja', '', '');
   }
 
   function ocultarConfirmarEliminar() {
@@ -226,8 +281,8 @@
   document.getElementById('btnAgregarCarga').addEventListener('click', () => {
     try {
       const desc = document.getElementById('descCarga').value;
-      const cant = Number(document.getElementById('cantCarga').value);
-      const pot = Number(document.getElementById('potCarga').value);
+      const cant = leerNumero('cantCarga');
+      const pot = leerNumero('potCarga');
       const horario = leerHorarioSeleccionado();
 
       const candidata = M.crearCarga(desc, cant, pot, horario);
@@ -322,7 +377,7 @@
     cuerpo.innerHTML = '';
     estado.listaCargas.forEach((c, i) => {
       const clasificacion = M.clasificarCarga(c.horario, estado.parametros.horaInicioDia, estado.parametros.horaFinDia);
-      const horario = M.formatoHorarioCompacto(c.horario);
+      const horario = M.formatoFranjas(c.horario);
       const tr = document.createElement('tr');
       if (estado.filaSeleccionada === i) tr.classList.add('is-selected');
       tr.innerHTML = `
@@ -330,8 +385,8 @@
         <td>${i + 1}</td>
         <td>${escapeHtml(c.descripcion)}</td>
         <td>${c.cantidad}</td>
-        <td>${c.potenciaUnitariaW}</td>
-        <td>${c.potenciaTotalW}</td>
+        <td>${fmt(c.potenciaUnitariaW, c.potenciaUnitariaW % 1 ? 1 : 0)}</td>
+        <td>${fmt(c.potenciaTotalW, c.potenciaTotalW % 1 ? 1 : 0)}</td>
         <td>${horario}</td>
         <td>${clasificacion}</td>
       `;
@@ -421,8 +476,8 @@
     const tarjetas = [
       ['Lecturas leídas', String(m.totalLecturas), 'del archivo'],
       ['Horas con dato', horasConDato + ' de 24', m.horasSinDato.length === 0 ? 'día completo' : 'faltan ' + m.horasSinDato.length],
-      ['Energía diaria medida', Ed.toFixed(2) + ' kWh', 'por día'],
-      ['Demanda máxima medida', Pmax.toFixed(1) + ' W', 'h=' + String(horaPico).padStart(2, '0') + ':00'],
+      ['Energía diaria medida', fmt(Ed, 2) + ' kWh', 'por día'],
+      ['Demanda máxima medida', fmt(Pmax, 0) + ' W', 'a las ' + h2(horaPico) + ':00'],
     ];
     document.getElementById('indicadoresMedicion').innerHTML = tarjetas.map(([label, val, sub]) => `
       <div class="indicador-card">
@@ -453,7 +508,7 @@
   // valores desactualizados sin avisar (agregar/editar/eliminar cargas, o
   // cambiar días/CU/criterio día-noche).
   function recalcularSiCorresponde() {
-    if (estado.resultados) calcularResultados(true);
+    if (estado.resultados || estado.calculoSolicitado) calcularResultados(true);
   }
 
   ['diasMes', 'diasAnio', 'costoUnitario', 'horaInicioDia', 'horaFinDia'].forEach(id => {
@@ -463,9 +518,10 @@
   function limpiarResultados() {
     estado.resultados = null;
     document.getElementById('indicadoresGrid').innerHTML = '';
+    document.getElementById('costosGrid').innerHTML = '';
     document.getElementById('graficoPerfil').innerHTML = '';
     ocultarTooltipGrafica();
-    ['avisoCU0', 'avisoFuentePerfil', 'avisoComparacion'].forEach(id => {
+    ['avisoCU0', 'avisoFuentePerfil', 'avisoComparacion', 'avisoPicoRepetido'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.hidden = true;
     });
@@ -480,15 +536,25 @@
     }
     if (estado.listaCargas.length === 0 && !estado.medicion) {
       limpiarResultados();
-      if (!silencioso) mostrarEstado('estadoResultados', 'Agregue al menos una carga en el Paso 2, o cargue la hoja de datos del equipo de medición.', 'error');
+      mostrarEstado('estadoResultados', 'No hay cargas registradas: agregue al menos una carga en el Paso 2, o cargue la hoja de datos del equipo de medición.', 'error');
       return;
     }
 
-    estado.parametros.diasOperacionMes = Number(document.getElementById('diasMes').value);
-    estado.parametros.diasOperacionAnio = Number(document.getElementById('diasAnio').value);
-    estado.parametros.costoUnitarioCU = Number(document.getElementById('costoUnitario').value);
-    estado.parametros.horaInicioDia = Number(document.getElementById('horaInicioDia').value);
-    estado.parametros.horaFinDia = Number(document.getElementById('horaFinDia').value);
+    const leidos = {
+      diasOperacionMes: leerNumero('diasMes'),
+      diasOperacionAnio: leerNumero('diasAnio'),
+      costoUnitarioCU: leerNumero('costoUnitario'),
+      horaInicioDia: leerNumero('horaInicioDia'),
+      horaFinDia: leerNumero('horaFinDia'),
+    };
+    const validacion = M.validarParametros(leidos);
+    if (validacion.errores.length) {
+      estado.calculoSolicitado = true;
+      limpiarResultados();
+      mostrarEstado('estadoResultados', 'Corrija para calcular: ' + validacion.errores.join(' '), 'error');
+      return;
+    }
+    Object.assign(estado.parametros, leidos);
 
     try {
       estado.proyecto.cargas = estado.listaCargas;
@@ -505,7 +571,11 @@
       const avisoCU0 = document.getElementById('avisoCU0');
       if (avisoCU0) avisoCU0.hidden = !estado.resultados.advertenciaCU0;
 
-      mostrarEstado('estadoResultados', 'Resultados calculados correctamente.', 'ok');
+      const otrasAdvertencias = validacion.advertencias.filter(a => !/CU\) es 0/.test(a));
+      mostrarEstado('estadoResultados', otrasAdvertencias.length
+        ? 'Resultados calculados. Revise: ' + otrasAdvertencias.join(' ')
+        : 'Resultados calculados correctamente.', otrasAdvertencias.length ? 'advertencia' : 'ok');
+      estado.calculoSolicitado = true;
       avisarCambioDeConsumo();
     } catch (err) {
       limpiarResultados();
@@ -533,14 +603,14 @@
     const c = r.comparacionPerfiles;
     if (c) {
       const signo = c.diferenciaKWh >= 0 ? '+' : '−';
-      const magnitud = Math.abs(c.diferenciaKWh).toFixed(2);
+      const magnitud = fmt(Math.abs(c.diferenciaKWh), 2);
       const porcentaje = c.diferenciaPorcentaje === null ? '' :
-        ' (' + signo + Math.abs(c.diferenciaPorcentaje).toFixed(1) + ' %)';
+        ' (' + signo + fmt(Math.abs(c.diferenciaPorcentaje), 1) + ' %)';
       const explicacion = c.diferenciaKWh >= 0
         ? 'Hay <strong>' + magnitud + ' kWh/día</strong> que el equipo midió y tus aparatos registrados no explican: pueden ser cargas que no anotaste o que consumen más de lo supuesto.'
         : 'Tus aparatos registrados suman <strong>' + magnitud + ' kWh/día</strong> más de lo que el equipo midió: probablemente alguno no se usa tantas horas como se supuso.';
       avisoComparacion.innerHTML =
-        'Estimado ' + c.EdEstimada.toFixed(2) + ' kWh/día · Medido ' + c.EdMedida.toFixed(2) +
+        'Estimado ' + fmt(c.EdEstimada, 2) + ' kWh/día · Medido ' + fmt(c.EdMedida, 2) +
         ' kWh/día' + porcentaje + '. ' + explicacion;
       avisoComparacion.hidden = false;
     } else {
@@ -548,25 +618,42 @@
     }
   }
 
-  function renderizarIndicadores(r) {
-    const grid = document.getElementById('indicadoresGrid');
-    const potenciaInstalada = (r.potenciaInstaladaW === null || r.potenciaInstaladaW === undefined)
-      ? ['Potencia instalada', '—', 'requiere el cuadro de cargas']
-      : ['Potencia instalada', r.potenciaInstaladaW.toFixed(1) + ' W', '(' + (r.potenciaInstaladaW / 1000).toFixed(2) + ' kW)'];
-    const items = [
-      potenciaInstalada,
-      ['Demanda máxima', r.demandaMaximaW.toFixed(1) + ' W', '(' + (r.demandaMaximaW / 1000).toFixed(2) + ' kW) · h=' + String(r.horaDemandaMaximaH).padStart(2, '0') + ':00'],
-      ['Energía diaria', r.energiaDiariaKWh.toFixed(2) + ' kWh', 'por día'],
-      ['Energía mensual', r.energiaMensualKWh.toFixed(1) + ' kWh', 'por mes'],
-      ['Energía anual', r.energiaAnualKWh.toFixed(1) + ' kWh', 'por año'],
-    ];
-    grid.innerHTML = items.map(([label, val, sub]) => `
+  function tarjetasHtml(items) {
+    return items.map(([label, val, sub]) => `
       <div class="indicador-card">
         <div class="label">${label}</div>
         <div class="value">${val}</div>
         <div class="sub">${sub}</div>
       </div>
     `).join('');
+  }
+
+  function renderizarIndicadores(r) {
+    const p = estado.parametros;
+    const potenciaInstalada = (r.potenciaInstaladaW === null || r.potenciaInstaladaW === undefined)
+      ? ['Potencia instalada', '—', 'requiere el cuadro de cargas']
+      : ['Potencia instalada', fmt(r.potenciaInstaladaW, 0) + ' W', fmt(r.potenciaInstaladaW / 1000, 2) + ' kW'];
+    const repetidas = (r.horasDemandaMaximaH || []).slice(1);
+    document.getElementById('indicadoresGrid').innerHTML = tarjetasHtml([
+      potenciaInstalada,
+      ['Demanda máxima', fmt(r.demandaMaximaW, 0) + ' W', 'a las ' + h2(r.horaDemandaMaximaH) + ':00' + (repetidas.length ? ' (se repite)' : '')],
+      ['Energía diaria', fmt(r.energiaDiariaKWh, 3) + ' kWh', 'por día'],
+      ['Energía mensual', fmt(r.energiaMensualKWh, 1) + ' kWh', p.diasOperacionMes + ' días al mes'],
+      ['Energía anual', fmt(r.energiaAnualKWh, 1) + ' kWh', p.diasOperacionAnio + ' días al año'],
+    ]);
+    document.getElementById('costosGrid').innerHTML = tarjetasHtml([
+      ['Costo diario', M.formatoPesos(r.costoDiario), 'CU ' + M.formatoPesos(p.costoUnitarioCU) + ' / kWh'],
+      ['Costo mensual', M.formatoPesos(r.costoMensual), p.diasOperacionMes + ' días'],
+      ['Costo anual', M.formatoPesos(r.costoAnual), p.diasOperacionAnio + ' días'],
+    ]);
+    const avisoPico = document.getElementById('avisoPicoRepetido');
+    if (repetidas.length) {
+      avisoPico.innerHTML = 'La demanda máxima de <strong>' + fmt(r.demandaMaximaW, 0) + ' W</strong> se alcanza en ' + (repetidas.length + 1) +
+        ' horas. Se reporta la primera, <strong>' + h2(r.horaDemandaMaximaH) + ':00</strong>; también ocurre a las ' + repetidas.map(h => h2(h) + ':00').join(', ') + '.';
+      avisoPico.hidden = false;
+    } else {
+      avisoPico.hidden = true;
+    }
   }
 
   function renderizarGrafica(perfil) {
@@ -585,7 +672,7 @@
     escala.marcas.forEach(valor => {
       const y = padT + altoGrafico - (valor / escala.maximo) * altoGrafico;
       svgContent += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#ece2d6" stroke-width="1"/>`;
-      svgContent += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="#6b6058">${valor}</text>`;
+      svgContent += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="#6b6058">${fmt(valor, valor % 1 ? 1 : 0)}</text>`;
     });
 
     // Barras
@@ -637,7 +724,7 @@
 
     tooltipGrafica.innerHTML =
       '<span class="tooltip-hora">' + String(hora).padStart(2, '0') + ':00 h</span>' +
-      '<span class="tooltip-valor">' + valor.toFixed(1) + ' W</span>';
+      '<span class="tooltip-valor">' + fmt(valor, 0) + ' W</span>';
     tooltipGrafica.hidden = false;
 
     // Posición en píxeles reales: el SVG se escala con el ancho de la pantalla,
@@ -667,24 +754,87 @@
 
   //INFORME
   
-  document.getElementById('btnGenerarInforme').addEventListener('click', () => {
-    if (!estado.resultados) {
-      mostrarEstado('estadoInforme', 'Primero calcule los resultados en el Paso 3.', 'error');
-      return;
-    }
+  // Motivo por el que todavía no se puede generar el informe, o null.
+  function faltaParaInforme() {
+    if (!estado.proyecto) return 'Primero complete y guarde los datos del proyecto en el Paso 1.';
+    if (estado.listaCargas.length === 0 && !estado.medicion) return 'El informe no tiene cargas: agregue al menos una carga en el Paso 2.';
+    if (!estado.resultados) return 'Primero calcule los resultados en el Paso 3 (revise los mensajes de ese paso).';
+    return null;
+  }
+
+  function generarInforme(tipo) {
+    const falta = faltaParaInforme();
+    if (falta) { mostrarEstado('estadoInforme', falta, 'error'); return; }
     try {
-      generarInformePDF(estado.proyecto, estado.resultados, estado.parametros, estado.generador);
-      const sinJustificacion = estado.generador && estado.generador.seleccion && !estado.generador.justificacionGrupo;
-      mostrarEstado('estadoInforme', 'Informe descargado como PDF.' +
-        (sinJustificacion ? ' Nota: el informe no incluye la justificación técnica del criterio; puede registrarse en el Paso 4 y generarse nuevamente.' : ''), 'ok');
+      if (tipo === 'resumen') {
+        generarResumenPDF(estado.proyecto, estado.resultados, estado.parametros, estado.generador, estado.conversion);
+        mostrarEstado('estadoInforme', 'Informe de una página descargado como PDF.', 'ok');
+      } else {
+        generarInformePDF(estado.proyecto, estado.resultados, estado.parametros, estado.generador, estado.conversion);
+        const sinJustificacion = estado.generador && estado.generador.seleccion && !estado.generador.justificacionGrupo;
+        mostrarEstado('estadoInforme', 'Informe completo descargado como PDF.' +
+          (sinJustificacion ? ' Nota: el informe no incluye la justificación técnica del criterio; puede registrarse en el Paso 4 y generarse nuevamente.' : ''), 'ok');
+      }
     } catch (err) {
-      mostrarEstado('estadoInforme', 'Error al generar el informe: ' + err.message, 'error');
+      mostrarEstado('estadoInforme', 'No se pudo generar el informe: ' + err.message, 'error');
     }
-  });
+  }
+  document.getElementById('btnGenerarInforme').addEventListener('click', () => generarInforme('completo'));
+  document.getElementById('btnGenerarResumen').addEventListener('click', () => generarInforme('resumen'));
+
+  // EXPORTAR RESULTADOS: CSV (hoja de cálculo) y JSON (datos estructurados).
+  function descargarTexto(contenido, nombre, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportar(formato) {
+    const falta = faltaParaInforme();
+    if (falta) { mostrarEstado('estadoExportar', falta, 'error'); return; }
+    try {
+      const datos = window.Exportar.reunirResultados(estado, VERSION_APP);
+      const base = 'Resultados ' + (estado.proyecto.nombreProyecto || 'proyecto').replace(/[\\/:*?"<>|]/g, '-');
+      if (formato === 'csv') {
+        descargarTexto('\ufeff' + window.Exportar.aCSV(datos), base + '.csv', 'text/csv;charset=utf-8');
+      } else {
+        descargarTexto(JSON.stringify(datos, null, 2), base + '.json', 'application/json');
+      }
+      mostrarEstado('estadoExportar', 'Resultados descargados en ' + formato.toUpperCase() + '.' +
+        (formato === 'csv' ? ' El archivo usa punto y coma entre columnas y coma decimal, como la pantalla y el informe.' : ''), 'ok');
+    } catch (err) {
+      mostrarEstado('estadoExportar', 'No se pudieron exportar los resultados: ' + err.message, 'error');
+    }
+  }
+  document.getElementById('btnExportarCSV').addEventListener('click', () => exportar('csv'));
+  document.getElementById('btnExportarJSON').addEventListener('click', () => exportar('json'));
+
+  // AYUDA INTEGRADA
+  const dialogoAyuda = document.getElementById('dialogoAyuda');
+  if (dialogoAyuda) {
+    document.getElementById('btnAyuda').addEventListener('click', () => {
+      if (typeof dialogoAyuda.showModal === 'function') dialogoAyuda.showModal();
+      else dialogoAyuda.setAttribute('open', '');
+    });
+    document.getElementById('btnCerrarAyuda').addEventListener('click', () => {
+      if (typeof dialogoAyuda.close === 'function') dialogoAyuda.close();
+      else dialogoAyuda.removeAttribute('open');
+    });
+  }
 
   // Generar 24 checkboxes ya se hizo arriba; inicializar tabla vacía
   actualizarTablaCargas();
 
   // Exponer generarInformePDF definido en informe.js
   window.__estadoAppReto01 = estado; // útil para depuración/pruebas
+  window.UIApp = {
+    irAPaso: n => {
+      document.getElementById('stepperNav').classList.add('is-visible');
+      irAPaso(n);
+    },
+  };
 })();

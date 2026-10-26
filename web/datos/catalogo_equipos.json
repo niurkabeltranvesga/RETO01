@@ -1,0 +1,642 @@
+{
+  "descripcion": "Catálogo de equipos de conversión y baterías. Archivo editable: para agregar un equipo basta copiar un bloque de su lista, cambiar los valores según la ficha técnica del fabricante y guardar. Cada equipo declara la ficha de la que se tomaron sus valores y la fecha de consulta. Los equipos marcados con referenciaTdR son los del caso de prueba estandarizado: no son productos comerciales y solo se eligen de forma manual.",
+  "unidades": {
+    "reguladores": "vocMaxV: tensión FV máxima en circuito abierto [V]; corrienteSalidaA: corriente nominal de carga al banco [A]; iscMaxA: corriente de cortocircuito FV máxima por entrada [A]; mpptMinV y mpptMaxV: ventana MPPT declarada para la tensión del banco [V] (opcional); entradasMppt: número de seguidores; maxParalelo: número máximo de unidades que el fabricante permite conectar en paralelo sobre el mismo banco (si la ficha no lo declara, se usa una sola unidad)",
+    "inversores": "pacW: potencia nominal de salida en CA [W]; vocMaxV: tensión máxima de entrada [V]; mpptMinV y mpptMaxV: ventana MPPT [V]; arranqueV: tensión de arranque [V] (opcional); impMaxA: corriente máxima por entrada MPPT [A]; iscMaxA: cortocircuito máximo por entrada MPPT [A]; entradasMppt: número de seguidores",
+    "baterias": "tensionV: tensión nominal de la unidad [V]; capacidadAh: capacidad nominal [Ah]; dodDisenoPct: profundidad de descarga de diseño [%]; eficienciaIdaVuelta: eficiencia en energía (0 a 1); limiteCargaC y limiteDescargaC: tasa C máxima recomendada; vidaAnios: vida de diseño [años]; dodDisenoPct, eficienciaIdaVuelta, limiteDescargaC o vidaAnios en null significan que la ficha no los declara: la aplicación pide el valor en el formulario o lo muestra como no declarado; ciclosVida: ciclos hasta fin de vida a cada profundidad de descarga (informativo); maxBaterias: máximo de unidades por sistema que admite el fabricante; maxSerie: máximo de unidades en serie que admite la ficha (1 = solo en paralelo); maxParalelo: máximo de ramas en paralelo; energiaKWh: energía nominal de la ficha. Cuando la ficha da la energía y no la capacidad, capacidadAh = energía / tensión nominal"
+  },
+  "reguladores": [
+    {
+      "id": "ctrl-a",
+      "referenciaTdR": true,
+      "fabricante": "Regulador del caso de prueba",
+      "modelo": "CTRL-A",
+      "vocMaxV": 150,
+      "corrienteSalidaA": 60,
+      "iscMaxA": 50,
+      "entradasMppt": 1,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "ctrl-b",
+      "referenciaTdR": true,
+      "fabricante": "Regulador del caso de prueba",
+      "modelo": "CTRL-B",
+      "vocMaxV": 250,
+      "corrienteSalidaA": 80,
+      "iscMaxA": 50,
+      "entradasMppt": 1,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "ctrl-c",
+      "referenciaTdR": true,
+      "fabricante": "Regulador del caso de prueba",
+      "modelo": "CTRL-C",
+      "vocMaxV": 250,
+      "corrienteSalidaA": 40,
+      "iscMaxA": 50,
+      "entradasMppt": 1,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "victron-smartsolar-150-35",
+      "fabricante": "Victron Energy",
+      "modelo": "SmartSolar MPPT 150/35",
+      "vocMaxV": 150,
+      "corrienteSalidaA": 35,
+      "iscMaxA": 40,
+      "mpptMaxV": 145,
+      "entradasMppt": 1,
+      "potenciaFvNominal48VW": 2000,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        12,
+        24,
+        36,
+        48
+      ],
+      "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 150/35 & 150/45\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_150-35_150-45.pdf. Voc máx. 150 V en las condiciones más frías; 145 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "victron-smartsolar-150-45",
+      "fabricante": "Victron Energy",
+      "modelo": "SmartSolar MPPT 150/45",
+      "vocMaxV": 150,
+      "corrienteSalidaA": 45,
+      "iscMaxA": 50,
+      "mpptMaxV": 145,
+      "entradasMppt": 1,
+      "potenciaFvNominal48VW": 2600,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        12,
+        24,
+        36,
+        48
+      ],
+      "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 150/35 & 150/45\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_150-35_150-45.pdf. Voc máx. 150 V en las condiciones más frías; 145 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "victron-smartsolar-150-60",
+      "fabricante": "Victron Energy",
+      "modelo": "SmartSolar MPPT 150/60",
+      "vocMaxV": 150,
+      "corrienteSalidaA": 60,
+      "iscMaxA": 50,
+      "mpptMaxV": 145,
+      "entradasMppt": 1,
+      "potenciaFvNominal48VW": 3440,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        12,
+        24,
+        36,
+        48
+      ],
+      "maxParalelo": 10,
+      "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 150/60 & MPPT 150/70\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_150-60_150-70.pdf. Voc máx. 150 V en las condiciones más frías; 145 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar. Operación en paralelo: hasta 10 unidades sincronizadas por Bluetooth.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "victron-smartsolar-150-70",
+      "fabricante": "Victron Energy",
+      "modelo": "SmartSolar MPPT 150/70",
+      "vocMaxV": 150,
+      "corrienteSalidaA": 70,
+      "iscMaxA": 50,
+      "mpptMaxV": 145,
+      "entradasMppt": 1,
+      "potenciaFvNominal48VW": 4000,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        12,
+        24,
+        36,
+        48
+      ],
+      "maxParalelo": 10,
+      "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 150/60 & MPPT 150/70\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_150-60_150-70.pdf. Voc máx. 150 V en las condiciones más frías; 145 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar. Operación en paralelo: hasta 10 unidades sincronizadas por Bluetooth.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "victron-smartsolar-250-60",
+      "fabricante": "Victron Energy",
+      "modelo": "SmartSolar MPPT 250/60",
+      "vocMaxV": 250,
+      "corrienteSalidaA": 60,
+      "iscMaxA": 35,
+      "mpptMaxV": 245,
+      "entradasMppt": 1,
+      "potenciaFvNominal48VW": 3440,
+      "eficienciaMaxPct": 99,
+      "tensionesBateriaV": [
+        12,
+        24,
+        36,
+        48
+      ],
+      "maxParalelo": 10,
+      "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 250/60 & MPPT 250/70\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_250-60_250-70.pdf. Voc máx. 250 V en las condiciones más frías; 245 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar. Operación en paralelo: hasta 10 unidades sincronizadas por Bluetooth.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "victron-smartsolar-250-70",
+      "fabricante": "Victron Energy",
+      "modelo": "SmartSolar MPPT 250/70",
+      "vocMaxV": 250,
+      "corrienteSalidaA": 70,
+      "iscMaxA": 35,
+      "mpptMaxV": 245,
+      "entradasMppt": 1,
+      "potenciaFvNominal48VW": 4000,
+      "eficienciaMaxPct": 99,
+      "tensionesBateriaV": [
+        12,
+        24,
+        36,
+        48
+      ],
+      "maxParalelo": 10,
+      "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 250/60 & MPPT 250/70\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_250-60_250-70.pdf. Voc máx. 250 V en las condiciones más frías; 245 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar. Operación en paralelo: hasta 10 unidades sincronizadas por Bluetooth.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "must-pv18-3048-vpm",
+      "fabricante": "Must Solar",
+      "modelo": "PV18-3048 VPM (MPPT integrado)",
+      "vocMaxV": 145,
+      "corrienteSalidaA": 80,
+      "mpptMinV": 60,
+      "mpptMaxV": 130,
+      "entradasMppt": 1,
+      "potenciaFvMaxW": 4000,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        48
+      ],
+      "fuente": "Must Solar, ficha técnica \"PV1800 VPM Series (1KW-5KW)\", columna PV18-3048 VPM (banco de 48 V). Copia en fuentes/fichas/Must_PV1800_VPM_1-5kW.pdf. Es un inversor-cargador con cargador solar MPPT integrado; la ficha no declara la corriente de cortocircuito FV máxima.",
+      "fechaConsulta": "2026-10-24"
+    }
+  ],
+  "inversores": [
+    {
+      "id": "inv-a",
+      "referenciaTdR": true,
+      "fabricante": "Inversor del caso de prueba",
+      "modelo": "INV-A",
+      "pacW": 1500,
+      "vocMaxV": 500,
+      "mpptMinV": 80,
+      "mpptMaxV": 450,
+      "impMaxA": 12,
+      "iscMaxA": 15,
+      "entradasMppt": 1,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "inv-b",
+      "referenciaTdR": true,
+      "fabricante": "Inversor del caso de prueba",
+      "modelo": "INV-B",
+      "pacW": 2000,
+      "vocMaxV": 600,
+      "mpptMinV": 90,
+      "mpptMaxV": 550,
+      "impMaxA": 16,
+      "iscMaxA": 20,
+      "entradasMppt": 1,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "inv-c",
+      "referenciaTdR": true,
+      "fabricante": "Inversor del caso de prueba",
+      "modelo": "INV-C",
+      "pacW": 3000,
+      "vocMaxV": 600,
+      "mpptMinV": 90,
+      "mpptMaxV": 550,
+      "impMaxA": 16,
+      "iscMaxA": 20,
+      "entradasMppt": 1,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "huawei-sun2000-2ktl-l1",
+      "fabricante": "Huawei",
+      "modelo": "SUN2000-2KTL-L1",
+      "pacW": 2000,
+      "vocMaxV": 600,
+      "mpptMinV": 90,
+      "mpptMaxV": 560,
+      "arranqueV": 100,
+      "impMaxA": 12.5,
+      "iscMaxA": 18,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.2,
+      "fuente": "Huawei, ficha técnica \"SUN2000-2/3/3.68/4/4.6/5/6KTL-L1 Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-2-6KTL-L1.pdf. Nota *2 de la ficha: con baterías LG la tensión máxima de entrada y de operación baja a 495 V.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "huawei-sun2000-3ktl-l1",
+      "fabricante": "Huawei",
+      "modelo": "SUN2000-3KTL-L1",
+      "pacW": 3000,
+      "vocMaxV": 600,
+      "mpptMinV": 90,
+      "mpptMaxV": 560,
+      "arranqueV": 100,
+      "impMaxA": 12.5,
+      "iscMaxA": 18,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.3,
+      "fuente": "Huawei, ficha técnica \"SUN2000-2/3/3.68/4/4.6/5/6KTL-L1 Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-2-6KTL-L1.pdf. Nota *2 de la ficha: con baterías LG la tensión máxima de entrada y de operación baja a 495 V.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "huawei-sun2000-5ktl-l1",
+      "fabricante": "Huawei",
+      "modelo": "SUN2000-5KTL-L1",
+      "pacW": 5000,
+      "vocMaxV": 600,
+      "mpptMinV": 90,
+      "mpptMaxV": 560,
+      "arranqueV": 100,
+      "impMaxA": 12.5,
+      "iscMaxA": 18,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.4,
+      "fuente": "Huawei, ficha técnica \"SUN2000-2/3/3.68/4/4.6/5/6KTL-L1 Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-2-6KTL-L1.pdf. Nota *2 de la ficha: con baterías LG la tensión máxima de entrada y de operación baja a 495 V.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "huawei-sun2000-6ktl-m1",
+      "fabricante": "Huawei",
+      "modelo": "SUN2000-6KTL-M1",
+      "pacW": 6000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 980,
+      "arranqueV": 200,
+      "impMaxA": 13.5,
+      "iscMaxA": 19.5,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 9000,
+      "fuente": "Huawei, ficha técnica \"SUN2000-3/4/5/6/8/10KTL-M1 (Versión de Alta Corriente) Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-3-10KTL-M1.pdf. Conexión trifásica 220/380 V o 230/400 V. La ventana MPPT es el rango de tensión de operación de la ficha (140 V a 980 V).",
+      "fechaConsulta": "2026-10-25"
+    },
+    {
+      "id": "huawei-sun2000-8ktl-m1",
+      "fabricante": "Huawei",
+      "modelo": "SUN2000-8KTL-M1",
+      "pacW": 8000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 980,
+      "arranqueV": 200,
+      "impMaxA": 13.5,
+      "iscMaxA": 19.5,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 12000,
+      "fuente": "Huawei, ficha técnica \"SUN2000-3/4/5/6/8/10KTL-M1 (Versión de Alta Corriente) Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-3-10KTL-M1.pdf. Conexión trifásica 220/380 V o 230/400 V. La ventana MPPT es el rango de tensión de operación de la ficha (140 V a 980 V).",
+      "fechaConsulta": "2026-10-25"
+    },
+    {
+      "id": "huawei-sun2000-10ktl-m1",
+      "fabricante": "Huawei",
+      "modelo": "SUN2000-10KTL-M1",
+      "pacW": 10000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 980,
+      "arranqueV": 200,
+      "impMaxA": 13.5,
+      "iscMaxA": 19.5,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 15000,
+      "fuente": "Huawei, ficha técnica \"SUN2000-3/4/5/6/8/10KTL-M1 (Versión de Alta Corriente) Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-3-10KTL-M1.pdf. Conexión trifásica 220/380 V o 230/400 V. La ventana MPPT es el rango de tensión de operación de la ficha (140 V a 980 V).",
+      "fechaConsulta": "2026-10-25"
+    },
+    {
+      "id": "growatt-mod-10ktl3-x",
+      "fabricante": "Growatt",
+      "modelo": "MOD10KTL3-X",
+      "pacW": 10000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 1000,
+      "arranqueV": 160,
+      "impMaxA": 13,
+      "iscMaxA": 16,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 15000,
+      "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 cadena por seguidor: 13 A / 16 A por seguidor.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "growatt-mod-11ktl3-x",
+      "fabricante": "Growatt",
+      "modelo": "MOD11KTL3-X",
+      "pacW": 11000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 1000,
+      "arranqueV": 160,
+      "impMaxA": 13,
+      "iscMaxA": 16,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 16500,
+      "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 cadena por seguidor: 13 A / 16 A por seguidor.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "growatt-mod-12ktl3-x",
+      "fabricante": "Growatt",
+      "modelo": "MOD12KTL3-X",
+      "pacW": 12000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 1000,
+      "arranqueV": 160,
+      "impMaxA": 26,
+      "iscMaxA": 32,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 18000,
+      "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 o 2 cadenas por seguidor: 26 A / 32 A por seguidor.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "growatt-mod-13ktl3-x",
+      "fabricante": "Growatt",
+      "modelo": "MOD13KTL3-X",
+      "pacW": 13000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 1000,
+      "arranqueV": 160,
+      "impMaxA": 26,
+      "iscMaxA": 32,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 19500,
+      "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 o 2 cadenas por seguidor: 26 A / 32 A por seguidor.",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "growatt-mod-15ktl3-x",
+      "fabricante": "Growatt",
+      "modelo": "MOD15KTL3-X",
+      "pacW": 15000,
+      "vocMaxV": 1100,
+      "mpptMinV": 140,
+      "mpptMaxV": 1000,
+      "arranqueV": 160,
+      "impMaxA": 26,
+      "iscMaxA": 32,
+      "entradasMppt": 2,
+      "eficienciaMaxPct": 98.6,
+      "potenciaFvMaxRecomendadaWp": 22500,
+      "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 o 2 cadenas por seguidor: 26 A / 32 A por seguidor.",
+      "fechaConsulta": "2026-10-26"
+    }
+  ],
+  "baterias": [
+    {
+      "id": "agm-tdr",
+      "referenciaTdR": true,
+      "fabricante": "Batería del caso de prueba",
+      "modelo": "AGM 12 V / 200 Ah",
+      "tecnologia": "AGM",
+      "tensionV": 12,
+      "capacidadAh": 200,
+      "dodDisenoPct": 50,
+      "eficienciaIdaVuelta": 0.8,
+      "limiteCargaC": 0.2,
+      "limiteDescargaC": null,
+      "vidaAnios": 4,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial. La eficiencia de la AGM es ilustrativa y supera el 75 % mínimo del RETIE.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "lfp-tdr",
+      "referenciaTdR": true,
+      "fabricante": "Batería del caso de prueba",
+      "modelo": "LFP 51,2 V / 100 Ah",
+      "tecnologia": "LFP",
+      "tensionV": 51.2,
+      "capacidadAh": 100,
+      "dodDisenoPct": 80,
+      "eficienciaIdaVuelta": 0.92,
+      "limiteCargaC": 0.5,
+      "limiteDescargaC": null,
+      "vidaAnios": 10,
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 6). Valor declarado; no corresponde a un producto comercial.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "victron-agm-12-220",
+      "fabricante": "Victron Energy",
+      "modelo": "AGM Deep Cycle 12 V 220 Ah (BAT412201084)",
+      "tecnologia": "AGM",
+      "tensionV": 12,
+      "capacidadAh": 220,
+      "capacidadReferencia": "C20 a 25 °C",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": null,
+      "limiteCargaC": 0.2,
+      "limiteDescargaC": null,
+      "vidaAnios": 4,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 400
+        },
+        {
+          "dodPct": 50,
+          "ciclos": 600
+        },
+        {
+          "dodPct": 30,
+          "ciclos": 1500
+        }
+      ],
+      "fuente": "Victron Energy, ficha técnica \"Baterías Gel y AGM\" (ES), www.victronenergy.com/upload/documents/Datasheet-GEL-and-AGM-Batteries-ES.pdf. Copia en fuentes/fichas/Victron_Baterias_GEL_y_AGM_ES.pdf. Capacidad en descarga de 20 h a 25 °C. Vida en ciclos: 400 al 80 %, 600 al 50 % y 1500 al 30 % de descarga. Vida de diseño: 4 años a 30 °C de temperatura media (tabla 2; 7-10 años a 20 °C). Corriente de carga preferiblemente ≤ 0,2 C. La ficha no fija un DoD de diseño ni declara la eficiencia de ida y vuelta.",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "victron-lfp-smart-25-6-200",
+      "fabricante": "Victron Energy",
+      "modelo": "Lithium Battery Smart 25,6 V / 200 Ah (LFP-Smart 25,6/200-a)",
+      "tecnologia": "LFP",
+      "tensionV": 25.6,
+      "capacidadAh": 200,
+      "capacidadReferencia": "a 25 °C, descarga ≤ 1C",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": 0.92,
+      "limiteCargaC": 0.5,
+      "limiteDescargaC": 1.0,
+      "vidaAnios": null,
+      "maxBaterias": 20,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 2500
+        },
+        {
+          "dodPct": 70,
+          "ciclos": 3000
+        },
+        {
+          "dodPct": 50,
+          "ciclos": 5000
+        }
+      ],
+      "fuente": "Victron Energy, ficha técnica \"Baterías Lithium Battery Smart de 12,8 y 25,6 voltios\" (ES), www.victronenergy.com/upload/documents/Datasheet-12,8-&-25,6-Volt-lithium-iron-phosphate-batteries-Smart-ES.pdf. Copia en fuentes/fichas/Victron_Lithium_Battery_Smart_12-8_25-6V_ES.pdf. Eficiencia de ciclo completo 92 %. Vida en ciclos (capacidad ≥ 80 %): 2500 al 80 %, 3000 al 70 % y 5000 al 50 % de descarga. Máximo 20 baterías por sistema; para 48 V el fabricante recomienda dos baterías de 25,6 V en serie. La ficha no declara una vida de diseño en años ni un DoD de diseño. Corriente de carga recomendada ≤ 100 A (0,5 C) y de descarga continua recomendada ≤ 200 A (1 C).",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "victron-lfp-smart-25-6-100",
+      "fabricante": "Victron Energy",
+      "modelo": "Lithium Battery Smart 25,6 V / 100 Ah (LFP-Smart 25,6/100)",
+      "tecnologia": "LFP",
+      "tensionV": 25.6,
+      "capacidadAh": 100,
+      "capacidadReferencia": "a 25 °C, descarga ≤ 1C",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": 0.92,
+      "limiteCargaC": 0.5,
+      "limiteDescargaC": 1.0,
+      "vidaAnios": null,
+      "maxBaterias": 20,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 2500
+        },
+        {
+          "dodPct": 70,
+          "ciclos": 3000
+        },
+        {
+          "dodPct": 50,
+          "ciclos": 5000
+        }
+      ],
+      "fuente": "Victron Energy, ficha técnica \"Baterías Lithium Battery Smart de 12,8 y 25,6 voltios\" (ES), www.victronenergy.com/upload/documents/Datasheet-12,8-&-25,6-Volt-lithium-iron-phosphate-batteries-Smart-ES.pdf. Copia en fuentes/fichas/Victron_Lithium_Battery_Smart_12-8_25-6V_ES.pdf. Eficiencia de ciclo completo 92 %. Vida en ciclos (capacidad ≥ 80 %): 2500 al 80 %, 3000 al 70 % y 5000 al 50 % de descarga. Máximo 20 baterías por sistema; para 48 V el fabricante recomienda dos baterías de 25,6 V en serie. La ficha no declara una vida de diseño en años ni un DoD de diseño. Corriente de carga recomendada ≤ 50 A (0,5 C) y de descarga continua recomendada ≤ 100 A (1 C).",
+      "fechaConsulta": "2026-10-24"
+    },
+    {
+      "id": "felicity-lpbf48100-m",
+      "fabricante": "Felicity Solar",
+      "modelo": "LPBF48100-M (51,2 V / 5 kWh)",
+      "tecnologia": "LFP",
+      "tensionV": 51.2,
+      "capacidadAh": 97.66,
+      "energiaKWh": 5,
+      "capacidadReferencia": "calculada: 5 kWh / 51,2 V",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": null,
+      "limiteCargaC": 0.512,
+      "limiteDescargaC": 0.512,
+      "vidaAnios": null,
+      "maxParalelo": 6,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 6000
+        }
+      ],
+      "fuente": "Felicity Solar, ficha técnica \"LPBF48100-M\" (EN), www.felicitysolar.com. Copia en fuentes/fichas/Felicity_LPBF48100-M_Datasheet.pdf. LiFePO4, 51,2 V nominales, 5 kWh. Corriente de carga y descarga recomendada ≤ 50 A (máxima 100 A durante 15 s). DoD ≥ 95 % (capacidad máxima de descarga, no un valor de diseño). Vida ≥ 6000 ciclos a 0,2 C, 25 °C y 80 % de descarga. Hasta 6 unidades en paralelo. La ficha da la energía y no la capacidad en Ah: capacidadAh = energía / tensión nominal. No declara la eficiencia de ida y vuelta, un DoD de diseño ni la vida en años (garantía de 5 años).",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "felicity-lpbf48200-m",
+      "fabricante": "Felicity Solar",
+      "modelo": "LPBF48200-M (51,2 V / 10 kWh)",
+      "tecnologia": "LFP",
+      "tensionV": 51.2,
+      "capacidadAh": 195.31,
+      "energiaKWh": 10,
+      "capacidadReferencia": "calculada: 10 kWh / 51,2 V",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": null,
+      "limiteCargaC": 0.41,
+      "limiteDescargaC": 0.41,
+      "vidaAnios": null,
+      "maxParalelo": 6,
+      "maxSerie": 1,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 6000
+        }
+      ],
+      "fuente": "Felicity Solar, guía de usuario \"LPBF24200-M / LPBF48150-M / LPBF48150-P / LPBF48200-M / LPBF48200-P\" (EN, 358-010242-07), columna LPBF48200-M. Copia en fuentes/fichas/Felicity_LPBF24200-M_48150-M-P_48200-M-P_Guia.pdf. LiFePO4, 51,2 V nominales, 10 kWh. Corriente de carga y descarga recomendada ≤ 80 A (máxima 120 A durante 15 s). DoD ≥ 95 % (capacidad máxima de descarga, no un valor de diseño). Vida ≥ 6000 ciclos a 0,2 C, 25 °C y 80 % de descarga. Hasta 6 unidades en paralelo. La ficha no admite conexión en serie. La ficha da la energía y no la capacidad en Ah: capacidadAh = energía / tensión nominal. No declara la eficiencia de ida y vuelta, un DoD de diseño ni la vida en años (garantía de 5 años).",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "felicity-lpbf48300",
+      "fabricante": "Felicity Solar",
+      "modelo": "LPBF48300 (51,2 V / 15 kWh)",
+      "tecnologia": "LFP",
+      "tensionV": 51.2,
+      "capacidadAh": 292.97,
+      "energiaKWh": 15,
+      "capacidadReferencia": "calculada: 15 kWh / 51,2 V",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": null,
+      "limiteCargaC": 0.41,
+      "limiteDescargaC": 0.41,
+      "vidaAnios": null,
+      "maxParalelo": 6,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 6000
+        }
+      ],
+      "fuente": "Felicity Solar, ficha técnica \"LPBF48300 / LPBF48300-II\" (EN), columna LPBF48300, www.felicitysolar.com. Copia en fuentes/fichas/Felicity_LPBF48300_Datasheet.pdf. LiFePO4, 51,2 V nominales, 15 kWh. Corriente de carga y descarga recomendada ≤ 120 A (máxima 200 A durante 15 s). DoD ≥ 95 % (capacidad máxima de descarga, no un valor de diseño). Vida ≥ 6000 ciclos a 0,2 C, 25 °C y 80 % de descarga. Hasta 6 unidades en paralelo. La ficha da la energía y no la capacidad en Ah: capacidadAh = energía / tensión nominal. No declara la eficiencia de ida y vuelta, un DoD de diseño ni la vida en años (garantía de 5 años).",
+      "fechaConsulta": "2026-10-26"
+    },
+    {
+      "id": "felicity-fla12300",
+      "fabricante": "Felicity Solar",
+      "modelo": "FLA12300 (12,8 V / 3,75 kWh)",
+      "tecnologia": "LFP",
+      "tensionV": 12.8,
+      "capacidadAh": 292.97,
+      "energiaKWh": 3.75,
+      "capacidadReferencia": "calculada: 3,75 kWh / 12,8 V",
+      "dodDisenoPct": null,
+      "eficienciaIdaVuelta": null,
+      "limiteCargaC": 0.512,
+      "limiteDescargaC": 0.512,
+      "vidaAnios": null,
+      "maxParalelo": 16,
+      "maxSerie": 4,
+      "ciclosVida": [
+        {
+          "dodPct": 80,
+          "ciclos": 6000
+        }
+      ],
+      "fuente": "Felicity Solar, manual \"LiFePO4 Battery System for Households\" (EN, 358-010410-01), modelo FLA12300. Copia en fuentes/fichas/Felicity_FLA12300_Manual.pdf. LiFePO4, 12,8 V nominales, 3,75 kWh. Corriente de carga y descarga recomendada ≤ 150 A (máxima 200 A durante 15 s). DoD ≥ 95 % (capacidad máxima de descarga, no un valor de diseño). Vida ≥ 6000 ciclos a 0,2 C, 25 °C y 80 % de descarga. Hasta 16 unidades en paralelo. En serie, como máximo 4 unidades. La ficha da la energía y no la capacidad en Ah: capacidadAh = energía / tensión nominal. No declara la eficiencia de ida y vuelta, un DoD de diseño ni la vida en años (garantía de 5 años).",
+      "fechaConsulta": "2026-10-26"
+    }
+  ]
+}

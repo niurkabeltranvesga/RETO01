@@ -17,7 +17,7 @@ async function main() {
 
   
   let paginasInforme = 0;
-  window.jspdf = { jsPDF: function () { paginasInforme = 1; return { setFillColor(){}, rect(){}, setFont(){}, setFontSize(){}, setTextColor(){}, text(){}, roundedRect(){}, circle(){}, setDrawColor(){}, line(){}, addPage(){ paginasInforme++; }, save(){}, splitTextToSize(t){ return [t]; } }; } };
+  window.jspdf = { jsPDF: function () { paginasInforme = 1; return { setFillColor(){}, rect(){}, setFont(){}, setFontSize(){}, setTextColor(){}, text(){}, roundedRect(){}, circle(){}, setDrawColor(){}, line(){}, addPage(){ paginasInforme++; }, save(){}, splitTextToSize(t){ return [t]; }, setLineWidth(){}, getTextWidth(t){ return String(t).length * 2; }, getNumberOfPages(){ return paginasInforme || 1; }, setPage(){} }; } };
 
 
   const motorCalculo = fs.readFileSync(path.join(__dirname, '..', 'motorCalculo.js'), 'utf-8');
@@ -102,13 +102,13 @@ async function main() {
   const valores = [...doc.querySelectorAll('.indicador-card .value')].map(e => e.textContent);
   console.log('  Indicadores:', valores);
 
-  if (!valores[0].includes('5220')) throw new Error('FALLÓ: Pinst esperado 5220, obtuvo ' + valores[0]);
-  if (!valores[1].includes('2400')) throw new Error('FALLÓ: Pmax esperado 2400, obtuvo ' + valores[1]);
-  if (!valores[2].includes('24.28')) throw new Error('FALLÓ: Ed esperado 24.28, obtuvo ' + valores[2]);
+  if (!valores[0].includes('5.220')) throw new Error('FALLÓ: Pinst esperado 5220, obtuvo ' + valores[0]);
+  if (!valores[1].includes('2.400')) throw new Error('FALLÓ: Pmax esperado 2400, obtuvo ' + valores[1]);
+  if (!valores[2].includes('24,28')) throw new Error('FALLÓ: Ed esperado 24,28, obtuvo ' + valores[2]);
 
   const subDemandaMaxima = [...doc.querySelectorAll('.indicador-card .sub')][1].textContent;
   console.log('  Sub demanda máxima:', subDemandaMaxima);
-  if (!subDemandaMaxima.includes('h=')) throw new Error('FALLÓ: no se muestra la hora de la demanda máxima');
+  if (!subDemandaMaxima.includes('a las ')) throw new Error('FALLÓ: no se muestra la hora de la demanda máxima');
 
   console.log('\n=== PASO 3b: La gráfica expone el valor exacto de cada hora (tooltip) ===');
   const zonas = doc.querySelectorAll('#graficoPerfil rect.barra-hit');
@@ -261,7 +261,7 @@ async function main() {
   click('btnCalcular');
   const heredados = [...doc.querySelectorAll('#heredadosGrid .indicador-card .value')].map(e => e.textContent);
   console.log('  Heredados:', heredados.join(' | '));
-  if (!heredados[0].includes(estadoApp.resultados.energiaDiariaKWh.toFixed(2))) throw new Error('FALLÓ: la energía diaria no llegó al Paso 4');
+  if (!heredados[0].includes(window.MotorCalculo.formatoNumero(estadoApp.resultados.energiaDiariaKWh, 3))) throw new Error('FALLÓ: la energía diaria no llegó al Paso 4');
   if (doc.getElementById('coincidenciaSolar').hidden) throw new Error('FALLÓ: falta la coincidencia con la ventana solar (RF-17)');
   const opcionesSitio = doc.querySelectorAll('#selSitio option').length;
   console.log('  Sitios disponibles:', opcionesSitio, '|', doc.getElementById('estadoDatos').textContent.trim());
@@ -350,7 +350,7 @@ async function main() {
   const gm = estadoApp.generador;
   console.log('  Ppico de diseño', gm.potenciaPicoKWp.toFixed(2), 'kWp | módulos', gm.seleccion.numeroModulos, '| E_eq', gm.metodo.energiaEquivalenteKWh.toFixed(2), '| Fc', gm.metodo.fc);
   if (Math.abs(gm.potenciaPicoKWp - 2.639) > 0.001 || gm.seleccion.numeroModulos !== 5) throw new Error('FALLÓ: con g = 20 % debían salir 2,64 kWp y 5 módulos');
-  if (doc.getElementById('comparacionMetodo').hidden || !doc.getElementById('comparacionMetodo').textContent.includes('2.08')) throw new Error('FALLÓ: falta la comparación con el método de referencia');
+  if (doc.getElementById('comparacionMetodo').hidden || !doc.getElementById('comparacionMetodo').textContent.includes('2,08')) throw new Error('FALLÓ: falta la comparación con el método de referencia');
   if (!gm.supuestos.some(sp => sp.id === 'crecimiento')) throw new Error('FALLÓ: los supuestos no incluyen el crecimiento');
   click('btnGenerarInforme');
   if (!doc.getElementById('estadoInforme').textContent.includes('descargado')) throw new Error('FALLÓ: el informe con el método propio no se generó');

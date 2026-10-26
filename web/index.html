@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reto 01 · Requerimiento Energético</title>
+<title>Requerimiento Energético</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,7 +16,33 @@
     </svg>
     <span class="brand-title">Requerimiento Energético</span>
   </div>
+  <div class="topbar-acciones">
+    <span class="version-app" data-version title="Versión de la plataforma">v1.0.0</span>
+    <button class="btn-ayuda" id="btnAyuda" type="button" aria-haspopup="dialog">? Ayuda</button>
+  </div>
 </header>
+
+<dialog class="dialogo-ayuda" id="dialogoAyuda" aria-labelledby="tituloAyuda">
+  <div class="ayuda-cab">
+    <h2 id="tituloAyuda">Cómo usar la plataforma</h2>
+    <button class="btn-cerrar" id="btnCerrarAyuda" type="button" aria-label="Cerrar la ayuda">×</button>
+  </div>
+  <div class="ayuda-cuerpo">
+    <p>La plataforma tiene seis pasos. Cada paso usa lo que ya escribió en los anteriores: no tiene que repetir datos. Los resultados se recalculan solos cuando cambia algo.</p>
+    <ol>
+      <li><strong>Proyecto.</strong> Escriba el nombre, los integrantes, la fecha y el contexto (on-grid si hay red eléctrica, off-grid si el sistema es aislado). Pulse «Guardar datos del proyecto». Si ya tiene un proyecto guardado (un archivo .json), ábralo con «Cargar proyecto desde archivo».</li>
+      <li><strong>Cargas.</strong> Para cada aparato escriba su nombre, cuántos hay y su potencia en vatios (W). Marque las horas en que está encendido: cada casilla es una hora completa (08:00 = de 08:00 a 09:00). Con «Marcar franja» puede marcar varias horas de una vez; si la hora final es menor que la inicial, la franja cruza la medianoche. Pulse «Agregar carga al cuadro». Para corregir una carga, selecciónela en la tabla y pulse «Editar».</li>
+      <li><strong>Resultados.</strong> Escriba los días de operación al mes y al año, el costo de la energía (CU, en $/kWh) y la ventana solar. Pulse «Calcular resultados» para ver la potencia instalada, la demanda máxima y su hora, la energía, los costos y el perfil de 24 horas.</li>
+      <li><strong>Generador.</strong> Elija el sitio (o consulte otra ubicación en NASA POWER) y revise los parámetros. Pulse «Dimensionar generador»: verá la potencia pico, los módulos, su conexión y el contraste con una segunda fuente de recurso solar.</li>
+      <li><strong>Conversión.</strong> Indique si el sistema tiene baterías. La plataforma revisa los reguladores o inversores del catálogo, explica en palabras sencillas si sirven y, si hace falta, propone agregar paneles o reorganizarlos.</li>
+      <li><strong>Informe.</strong> Descargue el informe de una página, el informe completo con la memoria de cálculo, o los resultados en CSV o JSON.</li>
+    </ol>
+    <p><strong>¿Una duda puntual?</strong> Pulse el botón «¿Dudas?» de la esquina inferior derecha y escriba su pregunta: el asistente responde con la información de este manual.</p>
+    <p><strong>Guardar el trabajo.</strong> En el Paso 1, «Guardar proyecto en archivo» descarga un archivo .json; con «Cargar proyecto desde archivo» se recupera tal como estaba.</p>
+    <p><strong>Formato de los números.</strong> Se usa coma decimal y punto de miles (por ejemplo 3.942 W y 32,688 kWh), igual en pantalla, en el informe y en los archivos exportados.</p>
+    <p><strong>Sin conexión.</strong> Si la consulta en línea falla, la plataforma sigue con la base de datos local y lo informa.</p>
+  </div>
+</dialog>
 
 <nav class="stepper" id="stepperNav" aria-label="Progreso del formulario">
   <ol>
@@ -24,7 +50,8 @@
     <li class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Cargas</span></li>
     <li class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Resultados</span></li>
     <li class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Generador</span></li>
-    <li class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Informe</span></li>
+    <li class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Conversión</span></li>
+    <li class="step" data-step="6"><span class="step-num">6</span><span class="step-label">Informe</span></li>
   </ol>
 </nav>
 
@@ -43,13 +70,15 @@
       y sus horarios de uso, y la aplicación calcula la potencia instalada, la demanda
       máxima, el consumo de energía diario, mensual y anual y el costo estimado. Con el
       recurso solar del sitio calcula la potencia pico, el número de módulos y su
-      configuración, y genera un informe en PDF.
+      configuración. Luego define el regulador o inversor y, si el sistema tiene
+      baterías, el banco de almacenamiento, y genera un informe en PDF.
     </p>
     <ol class="bienvenida-pasos">
       <li><strong>Proyecto</strong> — cuéntanos el nombre, contexto y datos generales.</li>
       <li><strong>Cargas</strong> — registra tus aparatos y sus horarios de uso.</li>
       <li><strong>Resultados</strong> — revisa los indicadores y el perfil horario.</li>
       <li><strong>Generador</strong> — dimensiona el generador fotovoltaico con el recurso solar del sitio.</li>
+      <li><strong>Conversión y almacenamiento</strong> — verifica el regulador o el inversor y dimensiona el banco de baterías.</li>
       <li><strong>Informe</strong> — descarga el resumen en PDF.</li>
     </ol>
     <button class="btn btn-primary" id="btnComenzar">Comenzar →</button>
@@ -124,7 +153,16 @@
     </div>
 
     <fieldset class="horario-fieldset">
-      <legend>Horario de uso (marque las horas activas, 0 a 23)</legend>
+      <legend>Horario de uso: marque las horas en que el aparato está encendido</legend>
+      <div class="franja-rapida">
+        <span>Marcar una franja:</span>
+        <label>desde <select id="franjaDesde" aria-label="Hora de inicio de la franja"></select></label>
+        <label>hasta <select id="franjaHasta" aria-label="Hora de fin de la franja"></select></label>
+        <button class="btn btn-secondary btn-small" id="btnMarcarFranja" type="button">Marcar franja</button>
+        <button class="btn btn-secondary btn-small" id="btnLimpiarHoras" type="button">Limpiar horas</button>
+      </div>
+      <p class="status" id="estadoFranja" role="status"></p>
+      <p class="nota-horario">Cada casilla es una hora completa: 08:00 significa de 08:00 a 09:00.</p>
       <div class="horario-grid" id="horarioGrid"><!-- 24 checkboxes generados por JS --></div>
     </fieldset>
 
@@ -223,9 +261,11 @@
     <div class="aviso aviso-fuente" id="avisoFuentePerfil" hidden></div>
     <div class="aviso aviso-comparacion" id="avisoComparacion" hidden></div>
 
+    <div class="aviso aviso-fuente" id="avisoPicoRepetido" hidden></div>
     <div class="indicadores" id="indicadoresGrid">
       <!-- tarjetas generadas por JS -->
     </div>
+    <div class="indicadores indicadores-costos" id="costosGrid"></div>
 
     <div class="chart-card">
       <h2>Perfil horario de demanda (24 h)</h2>
@@ -243,7 +283,7 @@
     </div>
   </section>
 
-  <!-- ===================== PASO 4: GENERADOR (Reto 02) ===================== -->
+  <!-- ===================== PASO 4: GENERADOR ===================== -->
   <section class="panel" id="panel-4" aria-labelledby="tituloPanel4">
     <h1 id="tituloPanel4">Dimensionamiento del generador fotovoltaico</h1>
     <p class="lead">Convierte el consumo caracterizado en los pasos anteriores en un generador: potencia pico, número de módulos, configuración en cadenas, tensiones, corrientes y área.</p>
@@ -269,14 +309,20 @@
     <p class="status" id="estadoDatos" role="status"></p>
 
     <details class="consulta-api" id="bloqueApi">
-      <summary>Consultar otra ubicación en línea (PVGIS)</summary>
-      <div class="field-grid field-grid-4">
+      <summary>Consultar otra ubicación en línea (NASA POWER)</summary>
+      <div class="field-grid field-grid-3">
         <label class="field"><span>Latitud</span><input type="number" id="apiLat" step="0.001" placeholder="11.226"></label>
         <label class="field"><span>Longitud</span><input type="number" id="apiLon" step="0.001" placeholder="-74.188"></label>
-        <label class="field"><span>Inclinación (°)</span><input type="number" id="apiIncl" value="12" step="1"></label>
-        <label class="field"><span>Azimut (°, 0 = sur)</span><input type="number" id="apiAzim" value="0" step="1"></label>
+        <label class="field"><span>Inclinación del generador</span>
+          <select id="apiIncl">
+            <option value="latitud" selected>Igual a la latitud</option>
+            <option value="latitud+15">Latitud + 15°</option>
+            <option value="horizontal">Horizontal (0°)</option>
+          </select>
+        </label>
       </div>
-      <button class="btn btn-secondary" id="btnConsultarApi">Consultar PVGIS</button>
+      <p class="nota-api">El generador queda orientado hacia el ecuador (al sur en el hemisferio norte). NASA POWER entrega la irradiación solo para estas inclinaciones.</p>
+      <button class="btn btn-secondary" id="btnConsultarApi">Consultar NASA POWER</button>
       <p class="status" id="estadoApi" role="status"></p>
     </details>
 
@@ -381,9 +427,12 @@
 
     <div id="resultadosGenerador" hidden>
       <div class="aviso aviso-advertencia" id="avisosGenerador" hidden></div>
+      <div class="aviso aviso-ajuste" id="ajusteConversion" hidden></div>
       <div class="indicadores" id="indicadoresGenerador"></div>
       <div class="aviso aviso-fuente" id="comparacionMetodo" hidden></div>
       <div class="aviso aviso-fuente" id="explicacionSeleccion"></div>
+
+      <div class="contraste-card" id="segundaFuenteGenerador" hidden></div>
 
       <h2>Configuración eléctrica</h2>
       <div class="indicadores" id="configuracionGenerador"></div>
@@ -410,21 +459,256 @@
     </div>
   </section>
 
-  <!-- ===================== PASO 5: INFORME ===================== -->
+  <!-- ===================== PASO 5: CONVERSIÓN Y ALMACENAMIENTO ===================== -->
   <section class="panel" id="panel-5" aria-labelledby="tituloPanel5">
-    <h1 id="tituloPanel5">Informe ejecutivo</h1>
-    <p class="lead">Genera el informe en PDF: la página del consumo (datos del proyecto, indicadores, cuadro de cargas, perfil horario y costos) y, si ya se dimensionó, la página del generador fotovoltaico.</p>
+    <h1 id="tituloPanel5">Conversión y almacenamiento</h1>
+    <p class="lead">Aquí se define el equipo que recibe la energía de los paneles y, si el sistema tiene baterías, cuántas se necesitan. Responda las preguntas: la aplicación calcula al instante y le dice si todo funciona y qué hacer si algo falla.</p>
 
-    <button class="btn btn-primary" id="btnGenerarInforme">Generar informe (PDF)</button>
-    <p class="status" id="estadoInforme" role="status"></p>
+    <div class="aviso aviso-advertencia" id="avisoSinGenerador" hidden>
+      ⚠ Primero dimensione el generador en el Paso 4. Este paso usa esos paneles y el consumo de los pasos anteriores, sin necesidad de ingresarlos nuevamente.
+    </div>
+
+    <div class="resumen-sistema" id="convResumen" hidden></div>
+    <p class="status" id="estadoConv" role="status"></p>
+
+    <div class="pregunta">
+      <span class="pregunta-num">1</span>
+      <div class="pregunta-cuerpo">
+        <h2>¿El sistema tiene baterías?</h2>
+        <div class="selector-rama" role="radiogroup" aria-label="Tipo de sistema">
+          <label class="opcion-rama">
+            <input type="radio" name="ramaConv" value="con">
+            <span class="opcion-rama-titulo">Sí, con baterías</span>
+            <span class="opcion-rama-desc">Sistemas aislados (off-grid) o híbridos. Se elige el regulador que carga las baterías y se calcula el banco.</span>
+          </label>
+          <label class="opcion-rama">
+            <input type="radio" name="ramaConv" value="sin">
+            <span class="opcion-rama-titulo">No, conectado a la red</span>
+            <span class="opcion-rama-desc">Sistema on-grid sin baterías. Se elige el inversor que entrega la energía a la red.</span>
+          </label>
+        </div>
+        <p class="nota-rama" id="convNotaRama"></p>
+      </div>
+    </div>
+
+    <div id="convEntradasCon">
+      <div class="pregunta">
+        <span class="pregunta-num">2</span>
+        <div class="pregunta-cuerpo">
+          <h2>¿Qué deben cubrir las baterías?</h2>
+          <div class="selector-autonomia" role="radiogroup" aria-label="Tipo de autonomía">
+            <label class="opcion-autonomia">
+              <input type="radio" name="modoAutonomia" value="dias" checked>
+              <span><strong>Días completos sin sol</strong><small>El banco alimenta todas las cargas durante N días nublados seguidos. Es el método del curso y el que se usa en sistemas aislados.</small></span>
+            </label>
+            <label class="opcion-autonomia">
+              <input type="radio" name="modoAutonomia" value="noche">
+              <span><strong>Solo el consumo de la noche</strong><small>El banco cubre la energía de las horas fuera de la ventana solar, tomada del perfil horario. De día los paneles alimentan las cargas directamente. Útil en sistemas híbridos.</small></span>
+            </label>
+          </div>
+          <div class="field-grid field-grid-3">
+            <label class="field"><span id="convEtiquetaAutonomia">Días de autonomía, N</span><input type="number" id="convAutonomia" value="2" step="0.5" min="0.5"></label>
+          </div>
+          <p class="ayuda-campo" id="convAyudaAutonomia">Son los días seguidos nublados que el sistema debe aguantar. Más días dan más respaldo, pero se necesitan más baterías.</p>
+        </div>
+      </div>
+
+      <div class="pregunta">
+        <span class="pregunta-num">3</span>
+        <div class="pregunta-cuerpo">
+          <h2>¿Qué batería quiere usar?</h2>
+          <div class="field-grid">
+            <label class="field field-wide"><span>Batería del catálogo</span><select id="convBateria"></select></label>
+          </div>
+          <p class="nota-campos" id="convNotaBateria"></p>
+          <h3 class="subtitulo-ajustes">Datos de la batería y del sistema <small>ya vienen llenos; cámbielos solo si tiene un dato mejor</small></h3>
+          <div class="field-grid field-grid-3 campos-ayuda">
+            <label class="field"><span>Profundidad de descarga, DoD (%)</span><input type="number" id="convDod" value="50" step="1" min="1" max="100"><small>Qué parte de la batería se deja usar. Menos % alarga la vida de la batería, pero pide más baterías.</small></label>
+            <label class="field"><span>Eficiencia de la batería, η_bat</span><input type="number" id="convEtaBat" value="0.80" step="0.01" min="0.5" max="1"><small>De cada 1 kWh que entra a la batería, cuánto se recupera (0,80 = 80 %).</small></label>
+            <label class="field"><span>Tensión del banco (V)</span><input type="number" id="convVbanco" value="48" step="0.1" min="1"><small>Tensión del conjunto de baterías. Se ajusta sola al elegir la batería.</small></label>
+            <label class="field"><span>Factor de temperatura, fT</span><input type="number" id="convFt" value="1.0" step="0.01" min="0.1" max="1"><small>1,0 si en el sitio la temperatura no baja de 18 °C. Con frío la batería rinde menos.</small></label>
+            <label class="field"><span>Tensión del sistema (V)</span><input type="number" id="convVnom" value="48" step="12" min="12"><small>Tensión con la que trabaja el regulador: 12, 24 o 48 V. A mayor potencia, mayor tensión.</small></label>
+            <label class="field"><span>Eficiencia del inversor, η_inv</span><input type="number" id="convEtaInvCon" value="0.90" step="0.01" min="0.5" max="1"><small>Las cargas usan corriente alterna; el inversor pierde una parte al convertirla.</small></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="convEntradasSin" hidden>
+      <div class="pregunta">
+        <span class="pregunta-num">2</span>
+        <div class="pregunta-cuerpo">
+          <h2>¿Qué tan grande puede ser el generador frente al inversor?</h2>
+          <div class="field-grid field-grid-3">
+            <label class="field"><span>Relación DC/AC mínima</span><input type="number" id="convDcAcMin" value="1.0" step="0.05" min="0.1"></label>
+            <label class="field"><span>Relación DC/AC máxima</span><input type="number" id="convDcAcMax" value="1.3" step="0.05" min="0.1"></label>
+          </div>
+          <p class="ayuda-campo">La relación DC/AC es la potencia de los paneles dividida por la del inversor. Se acepta entre 1,0 y 1,3 (PVWatts recomienda 1,2). Por encima, en las horas de más sol el inversor recorta energía; por debajo, el inversor es más grande de lo necesario.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pregunta" id="bloqueEquipos">
+      <span class="pregunta-num" id="convNumEquipo">4</span>
+      <div class="pregunta-cuerpo">
+        <h2 id="convTituloEquipos">¿Qué regulador conecta los paneles a las baterías?</h2>
+        <p class="ayuda-campo" id="convAyudaEquipos"></p>
+        <select id="convRegulador" hidden></select>
+        <select id="convInversor" hidden></select>
+        <p class="nota-campos" id="convCriterio"></p>
+        <div class="lista-equipos" id="convTarjetasEquipos"></div>
+        <details class="grupo-referencia" id="convGrupoReferencia">
+          <summary id="convResumenReferencia">Equipos del caso de prueba</summary>
+          <div class="lista-equipos" id="convTarjetasReferencia"></div>
+        </details>
+      </div>
+    </div>
+
+    <div id="resultadosConv" hidden>
+      <div id="convResultadosBanco">
+        <h2>Banco de baterías</h2>
+        <div class="banco-simple" id="convBancoSimple"></div>
+        <div class="esquema-banco" id="convEsquema"></div>
+
+        <h2>¿Los paneles alcanzan para el consumo y para recargar las baterías?</h2>
+        <div class="balance" id="convBalance"></div>
+      </div>
+
+      <div id="convResultadosInversor" hidden>
+        <h2>Tamaño del inversor frente a los paneles</h2>
+        <div class="medidor-dcac" id="convDcAc"></div>
+      </div>
+
+      <details class="detalle-tecnico" id="convDetalleTecnico">
+        <summary>Ver detalle técnico (verificación, tasa C, comparación de baterías, sensibilidad y fórmulas)</summary>
+        <div class="aviso aviso-advertencia" id="convAvisos" hidden></div>
+        <div class="veredicto-equipo" id="convVeredicto"></div>
+
+        <h3>Verificación del equipo frente a los paneles</h3>
+        <div class="table-wrap">
+          <table class="tabla-veredictos">
+            <thead id="convCabeceraEquipos"></thead>
+            <tbody id="convCuerpoEquipos"></tbody>
+          </table>
+        </div>
+
+        <div id="convTecnicoBanco">
+          <h3>Banco de baterías</h3>
+          <div class="indicadores" id="convBanco"></div>
+
+          <h3>Balance de cierre</h3>
+          <div class="balance-cols" id="convBalanceCols"></div>
+          <p class="nota-campos" id="convBalanceFormula"></p>
+
+          <h3>Tasa C y recuperación</h3>
+          <div class="indicadores" id="convTasas"></div>
+
+          <h3>Comparación de tecnologías</h3>
+          <p class="nota-campos">Mismo consumo y autonomía con cada batería del catálogo, cada una con su DoD, su eficiencia y su tensión de banco. La energía nominal por año de servicio es la energía instalada dividida por la vida de diseño de la ficha.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Batería</th><th>Banco</th><th>Baterías</th><th>kWh instalados</th><th>DoD final</th><th>Tasa C de carga</th><th>Vida</th><th>kWh por año de servicio</th></tr></thead>
+              <tbody id="convCuerpoTecnologias"></tbody>
+            </table>
+          </div>
+
+          <h3 id="convTituloSensibilidad">Sensibilidad a la autonomía</h3>
+          <p class="nota-campos">Mismo consumo, batería y DoD de diseño con otros días de autonomía.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Autonomía</th><th>Capacidad requerida</th><th>Configuración</th><th>Baterías</th><th>kWh instalados</th><th>DoD final</th><th>DoD diario</th></tr></thead>
+              <tbody id="convCuerpoSensibilidad"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3>Datos que vienen de los pasos anteriores</h3>
+        <div class="indicadores" id="convHeredados"></div>
+
+        <h3>Fórmulas y supuestos</h3>
+        <ul class="lista-supuestos" id="convSupuestos"></ul>
+      </details>
+    </div>
+
+    <details class="consulta-api" id="bloqueCatalogoEquipos">
+      <summary>Catálogo de equipos y baterías</summary>
+      <p class="nota-campos" id="convResumenCatalogo"></p>
+      <div class="button-row">
+        <button class="btn btn-secondary" id="btnDescargarEquipos" type="button">Descargar catálogo (.json)</button>
+        <label class="btn btn-secondary file-btn">
+          Cargar catálogo editado (.json)
+          <input type="file" id="inputCatalogoEquipos" accept=".json" hidden>
+        </label>
+      </div>
+      <p class="status" id="estadoCatalogoEquipos" role="status"></p>
+    </details>
 
     <div class="panel-nav">
       <button class="btn btn-secondary btn-back" data-goto="4">← Atrás</button>
+      <button class="btn btn-primary btn-next" data-goto="6">Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- ===================== PASO 6: INFORME ===================== -->
+  <section class="panel" id="panel-6" aria-labelledby="tituloPanel6">
+    <h1 id="tituloPanel6">Informe y resultados</h1>
+
+    <div class="opciones-informe">
+      <div class="opcion-informe">
+        <h2>Informe de una página</h2>
+        <p>Resumen del proyecto en una sola hoja A4: días de operación y CU, consumo, perfil de 24 horas, generador con su fuente y la segunda fuente, y el equipo de conversión.</p>
+        <button class="btn btn-primary" id="btnGenerarResumen" type="button">Descargar informe de una página (PDF)</button>
+      </div>
+      <div class="opcion-informe">
+        <h2>Informe completo</h2>
+        <p>Incluye el cuadro de cargas detallado y la memoria de cálculo del generador, de la conversión y del almacenamiento.</p>
+        <button class="btn btn-secondary" id="btnGenerarInforme" type="button">Descargar informe completo (PDF)</button>
+      </div>
+    </div>
+    <p class="status" id="estadoInforme" role="status"></p>
+
+    <hr class="divider">
+
+    <h2>Exportar resultados</h2>
+    <p class="lead">Descargue los resultados para abrirlos en una hoja de cálculo (CSV) o en otro programa (JSON). Usan las mismas unidades y el mismo redondeo que la pantalla.</p>
+    <div class="button-row">
+      <button class="btn btn-secondary" id="btnExportarCSV" type="button">Resultados en CSV</button>
+      <button class="btn btn-secondary" id="btnExportarJSON" type="button">Resultados en JSON</button>
+    </div>
+    <p class="status" id="estadoExportar" role="status"></p>
+
+    <div class="panel-nav">
+      <button class="btn btn-secondary btn-back" data-goto="5">← Atrás</button>
       <span></span>
     </div>
   </section>
 
 </main>
+
+<button class="asistente-boton" id="btnAsistente" type="button" aria-controls="panelAsistente" aria-expanded="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-4.5 3.5V17H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8.5" cy="10.5" r="1.1" fill="currentColor"/><circle cx="12" cy="10.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="10.5" r="1.1" fill="currentColor"/></svg>
+  <span>¿Dudas?</span>
+</button>
+<section class="asistente-panel" id="panelAsistente" role="dialog" aria-labelledby="tituloAsistente" hidden>
+  <div class="asistente-cab">
+    <div>
+      <h2 id="tituloAsistente">Asistente de ayuda</h2>
+      <small>Responde con el manual de la plataforma</small>
+    </div>
+    <button class="btn-cerrar" id="btnCerrarAsistente" type="button" aria-label="Cerrar el asistente">×</button>
+  </div>
+  <div class="asistente-mensajes" id="asistenteMensajes" aria-live="polite"></div>
+  <div class="asistente-sugerencias" id="asistenteSugerencias"></div>
+  <form class="asistente-form" id="formAsistente">
+    <input type="text" id="entradaAsistente" placeholder="Escriba su pregunta…" autocomplete="off" aria-label="Su pregunta">
+    <button class="btn btn-primary btn-small" type="submit">Enviar</button>
+  </form>
+</section>
+
+<footer class="pie-app">
+  <span>Universidad del Magdalena · Energía Solar Fotovoltaica 2026-II</span>
+  <span data-version>v1.0.0</span>
+</footer>
 
 <!-- Librería para exportar el informe a PDF desde el navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -433,7 +717,12 @@
 <script src="dimensionamiento.js"></script>
 <script src="datos/datos_respaldo.js"></script>
 <script src="informe.js"></script>
+<script src="informeResumen.js"></script>
+<script src="exportar.js"></script>
+<script src="asistente.js"></script>
 <script src="app.js"></script>
 <script src="generador.js"></script>
+<script src="conversion.js"></script>
+<script src="pasoConversion.js"></script>
 </body>
 </html>

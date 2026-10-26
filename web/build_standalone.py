@@ -7,13 +7,13 @@ web, con el CSS, el JavaScript y la imagen de fondo incrustados
 directamente adentro (sin archivos "hermanos" sueltos). Con el fin de poder ver la app
 por app como wpp.
 
-Además genera datos/datos_respaldo.js, una copia del catálogo de módulos y
-de la base de sitios que la app usa cuando se abre sin servidor (doble clic),
+Además genera datos/datos_respaldo.js, una copia del catálogo de módulos,
+del catálogo de equipos de conversión y baterías y de la base de sitios que la app usa cuando se abre sin servidor (doble clic),
 porque en ese caso el navegador no deja leer los .json directamente.
 
 Ejecutar cada vez que se edite cualquier archivo de la app, el catálogo
-(datos/catalogo_modulos.json), la base de sitios (datos/base_sitios.json) o
-la imagen de fondo:
+(datos/catalogo_modulos.json), el catálogo de equipos (datos/catalogo_equipos.json),
+la base de sitios (datos/base_sitios.json) o la imagen de fondo:
 
     python3 build_standalone.py
 """
@@ -32,15 +32,17 @@ def leer(nombre, binario=False):
 def generar_respaldo_datos():
     catalogo = json.loads(leer('datos/catalogo_modulos.json'))
     sitios = json.loads(leer('datos/base_sitios.json'))
+    equipos = json.loads(leer('datos/catalogo_equipos.json'))
     contenido = (
         '// Archivo generado por build_standalone.py: NO editar a mano.\n'
-        '// Copia de datos/catalogo_modulos.json y datos/base_sitios.json para\n'
-        '// cuando la aplicación se abre sin servidor.\n'
-        'window.DATOS_RESPALDO = ' + json.dumps({'catalogo': catalogo, 'sitios': sitios}, ensure_ascii=False, indent=2) + ';\n'
+        '// Copia de datos/catalogo_modulos.json, datos/catalogo_equipos.json y\n'
+        '// datos/base_sitios.json para cuando la aplicación se abre sin servidor.\n'
+        'window.DATOS_RESPALDO = ' + json.dumps({'catalogo': catalogo, 'sitios': sitios, 'equipos': equipos}, ensure_ascii=False, indent=2) + ';\n'
     )
     with open(os.path.join(CARPETA, 'datos', 'datos_respaldo.js'), 'w', encoding='utf-8') as f:
         f.write(contenido)
-    print(f"Generado: datos/datos_respaldo.js ({len(catalogo['modulos'])} módulos, {len(sitios['sitios'])} sitios)")
+    print(f"Generado: datos/datos_respaldo.js ({len(catalogo['modulos'])} módulos, {len(sitios['sitios'])} sitios, "
+          f"{len(equipos['reguladores'])} reguladores, {len(equipos['inversores'])} inversores, {len(equipos['baterias'])} baterías)")
     return contenido
 
 def main():
@@ -51,7 +53,12 @@ def main():
     medicion = leer('medicion.js')
     dimensionamiento = leer('dimensionamiento.js')
     generador = leer('generador.js')
+    conversion = leer('conversion.js')
+    paso_conversion = leer('pasoConversion.js')
     informe = leer('informe.js')
+    informe_resumen = leer('informeResumen.js')
+    exportar = leer('exportar.js')
+    asistente = leer('asistente.js')
     app = leer('app.js')
     img_bytes = leer('assets/fondo-paneles.png', binario=True)
     img_b64 = base64.b64encode(img_bytes).decode('ascii')
@@ -70,7 +77,12 @@ def main():
     html = html.replace('<script src="dimensionamiento.js"></script>', f'<script>\n{dimensionamiento}\n</script>')
     html = html.replace('<script src="datos/datos_respaldo.js"></script>', f'<script>\n{respaldo}\n</script>')
     html = html.replace('<script src="generador.js"></script>', f'<script>\n{generador}\n</script>')
+    html = html.replace('<script src="conversion.js"></script>', f'<script>\n{conversion}\n</script>')
+    html = html.replace('<script src="pasoConversion.js"></script>', f'<script>\n{paso_conversion}\n</script>')
     html = html.replace('<script src="informe.js"></script>', f'<script>\n{informe}\n</script>')
+    html = html.replace('<script src="informeResumen.js"></script>', f'<script>\n{informe_resumen}\n</script>')
+    html = html.replace('<script src="exportar.js"></script>', f'<script>\n{exportar}\n</script>')
+    html = html.replace('<script src="asistente.js"></script>', f'<script>\n{asistente}\n</script>')
     html = html.replace('<script src="app.js"></script>', f'<script>\n{app}\n</script>')
 
     salida = os.path.join(CARPETA, 'index_standalone.html')

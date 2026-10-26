@@ -11,9 +11,9 @@
       "iscA": 14.31,
       "vmpV": 33.96,
       "impA": 13.27,
-      "coefVocPctC": -0.230,
-      "coefPmaxPctC": -0.290,
-      "coefIscPctC": 0.050,
+      "coefVocPctC": -0.23,
+      "coefPmaxPctC": -0.29,
+      "coefIscPctC": 0.05,
       "celdasSerie": 54,
       "areaM2": 1.953,
       "eficienciaPct": 23.0,
@@ -71,9 +71,9 @@
       "iscA": 16.54,
       "vmpV": 40.98,
       "impA": 15.86,
-      "coefVocPctC": -0.200,
-      "coefPmaxPctC": -0.260,
-      "coefIscPctC": 0.050,
+      "coefVocPctC": -0.2,
+      "coefPmaxPctC": -0.26,
+      "coefIscPctC": 0.05,
       "celdasSerie": 66,
       "areaM2": 2.701,
       "eficienciaPct": 24.06,
@@ -85,7 +85,7 @@
     {
       "id": "referencia-tdr-550",
       "referenciaTdR": true,
-      "fabricante": "Módulo de referencia del TdR",
+      "fabricante": "Módulo del caso de prueba",
       "modelo": "550 Wp (caso de prueba)",
       "potenciaW": 550,
       "vocV": 49.5,
@@ -100,7 +100,7 @@
       "eficienciaPct": 21.3,
       "temperaturaNominalC": 45,
       "tipoTemperaturaNominal": "NOCT",
-      "fuente": "TdR Reto 02, sección 7.2. Valores declarados para el caso de prueba; no corresponde a un producto comercial.",
+      "fuente": "Caso de prueba estandarizado (términos de referencia, sección 7.2). Valores declarados; no corresponde a un producto comercial.",
       "fechaConsulta": "2026-10-04"
     }
   ]

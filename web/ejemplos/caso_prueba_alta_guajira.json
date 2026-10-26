@@ -273,6 +273,23 @@
     "moduloManualId": "referencia-tdr-550",
     "sitiosConsultados": [],
     "dimensionado": true,
-    "justificacionGrupo": "Se seleccionó manualmente el módulo de referencia de 550 Wp definido en la sección 7.2 del TdR, con el fin de reproducir el caso de prueba estandarizado y contrastar los resultados con los valores de referencia."
+    "justificacionGrupo": "Se seleccionó manualmente el módulo del caso de prueba (550 Wp, sección 7.2 de los términos de referencia), con el fin de reproducir el caso de prueba estandarizado y contrastar los resultados con los valores de referencia."
+  },
+  "conversion": {
+    "rama": "con",
+    "ramaElegidaPorUsuario": false,
+    "reguladorId": "ctrl-b",
+    "inversorId": "inv-b",
+    "bateriaId": "agm-tdr",
+    "etaInv": 0.9,
+    "vNominalV": 48,
+    "vBancoV": 48,
+    "tensionBancoEditada": false,
+    "autonomiaDias": 2,
+    "dodPct": 50,
+    "fT": 1.0,
+    "etaBat": 0.8,
+    "dcAcMin": 1.0,
+    "dcAcMax": 1.3
   }
 }

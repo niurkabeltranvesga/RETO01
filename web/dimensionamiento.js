@@ -1,12 +1,12 @@
 // dimensionamiento.js
 //
-// Módulo de dimensionamiento del generador fotovoltaico (Reto 02).
+// Módulo de dimensionamiento del generador fotovoltaico.
 // Funciones puras: no tocan la interfaz. Reciben la energía y el perfil que
-// ya calcula el Reto 01, el recurso solar del sitio y el catálogo de
+// ya calcula el paso de consumo, el recurso solar del sitio y el catálogo de
 // módulos, y devuelven la potencia pico, la configuración en cadenas, las
 // tensiones, las corrientes y el área del generador.
 //
-// Fórmulas (TdR Reto 02, sección 7.3):
+// Fórmulas:
 //   (1) Ppico = Ed / (HSP · PR)
 //   (2) Voc,gen = Nserie · Voc,STC · [1 + β (Tmin − 25)]  ≤  Vmax del sistema
 //   (3) Idiseño = 1,25 · 1,25 · Isc,gen                  (NTC 2050 art. 690-8)
@@ -16,14 +16,22 @@
 (function (raiz) {
     'use strict';
 
+    // Números para los mensajes: coma decimal y punto de miles, como en la pantalla.
+    function fx(valor, decimales) {
+        const fijo = Math.abs(Number(valor)).toFixed(decimales);
+        const [entera, fraccion] = fijo.split('.');
+        const signo = Number(valor) < 0 && Number(fijo) !== 0 ? '-' : '';
+        return signo + entera.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (fraccion ? ',' + fraccion : '');
+    }
+
     const DIAS_MES = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     const NOMBRES_MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    const IRRADIANCIA_DISENO = 1000;      // W/m², condición del modelo NOCT del TdR
+    const IRRADIANCIA_DISENO = 1000;      // W/m², condición del modelo NOCT
     const FACTOR_NTC_2050 = 1.25 * 1.25;  // = 1,5625
 
-    // Rangos con los que se advierte un valor poco razonable (RF-24).
+    // Rangos con los que se advierte un valor poco razonable.
     const RANGOS = {
         hsp: [2, 8],                 // kWh/m²·día: en Colombia suele estar entre 3,5 y 6,5
         pr: [0.6, 0.9],
@@ -48,9 +56,9 @@
     };
 
     // ---------------------------------------------------------------------
-    // Coincidencia entre demanda y recurso solar (RF-17)
+    // Coincidencia entre demanda y recurso solar
     // Usa el mismo criterio horario que la clasificación diurna/nocturna del
-    // Reto 01: la hora h está dentro de la ventana si inicio ≤ h < fin.
+    // paso de consumo: la hora h está dentro de la ventana si inicio ≤ h < fin.
     // ---------------------------------------------------------------------
     function energiaEnVentanaSolar(perfilW, horaInicio = 6, horaFin = 18) {
         if (!Array.isArray(perfilW) || perfilW.length !== 24) {
@@ -76,7 +84,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // Recurso solar del sitio (RF-14, RF-16)
+    // Recurso solar del sitio
     // ---------------------------------------------------------------------
     function promedioAnualDesdeMensual(mensual) {
         let suma = 0;
@@ -116,7 +124,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // Potencia pico (RF-18), fórmula (1)
+    // Potencia pico, fórmula (1)
     // ---------------------------------------------------------------------
     function calcularPotenciaPicoKWp(energiaDiariaKWh, hsp, pr) {
         if (!(energiaDiariaKWh > 0)) throw new Error('La energía diaria debe ser mayor que cero.');
@@ -126,7 +134,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // Correcciones por temperatura (RF-20)
+    // Correcciones por temperatura
     // ---------------------------------------------------------------------
     function temperaturaCelda(tAmbC, temperaturaNominalC, irradiancia = IRRADIANCIA_DISENO) {
         return tAmbC + (temperaturaNominalC - 20) / 800 * irradiancia;
@@ -137,7 +145,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // Evaluación de un módulo del catálogo (RF-19 a RF-22)
+    // Evaluación de un módulo del catálogo
     // ---------------------------------------------------------------------
     function evaluarModulo(modulo, ctx) {
         const vocTmin = corregirPorTemperatura(modulo.vocV, modulo.coefVocPctC, ctx.tMinC);
@@ -150,20 +158,22 @@
             maxModulosSerie: maxSerie,
         };
 
-        // Filtro del TdR: un módulo cuyo Voc corregido no deja armar ni una
+        // Filtro: un módulo cuyo Voc corregido no deja armar ni una
         // cadena bajo la tensión máxima queda descartado.
         if (maxSerie < 1) {
             return Object.assign(base, {
                 viable: false,
-                motivoDescarte: 'Su Voc a ' + ctx.tMinC + ' °C (' + vocTmin.toFixed(2) + ' V) supera la tensión máxima del sistema (' + ctx.vMaxSistema + ' V).',
+                motivoDescarte: 'Su Voc a ' + ctx.tMinC + ' °C (' + fx(vocTmin, 2) + ' V) supera la tensión máxima del sistema (' + ctx.vMaxSistema + ' V).',
             });
         }
 
         const modulosRequeridos = Math.ceil((ctx.potenciaPicoKWp * 1000) / modulo.potenciaW - 1e-9);
         // Cadenas iguales: tantas en paralelo como hagan falta para no pasar
         // del máximo en serie, y el mismo número de módulos en cada una.
-        const cadenasParalelo = Math.ceil(modulosRequeridos / maxSerie);
-        const modulosSerie = Math.ceil(modulosRequeridos / cadenasParalelo);
+        // Si el paso de conversión fijó cuántos módulos van en serie, se respeta.
+        const serieFija = ctx.modulosSerieFijo > 0 && ctx.modulosSerieFijo <= maxSerie ? ctx.modulosSerieFijo : null;
+        const cadenasParalelo = serieFija ? Math.ceil(modulosRequeridos / serieFija) : Math.ceil(modulosRequeridos / maxSerie);
+        const modulosSerie = serieFija || Math.ceil(modulosRequeridos / cadenasParalelo);
         const numeroModulos = modulosSerie * cadenasParalelo;
 
         const potenciaInstaladaW = numeroModulos * modulo.potenciaW;
@@ -171,7 +181,7 @@
         const excedenteW = potenciaInstaladaW - potenciaPicoW;
 
         const tCelda = temperaturaCelda(ctx.tAmbOperacionC, modulo.temperaturaNominalC);
-        // El TdR corrige Vmp con el coeficiente de Voc (β); se sigue igual.
+        // Vmp se corrige con el coeficiente de Voc (β).
         const vmpModuloOperacion = corregirPorTemperatura(modulo.vmpV, modulo.coefVocPctC, tCelda);
         const iscGenerador = modulo.iscA * cadenasParalelo;
         const areaGenerador = numeroModulos * modulo.areaM2;
@@ -198,7 +208,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // Selección con criterio explícito (sección 5 del TdR)
+    // Selección con criterio explícito
     // ---------------------------------------------------------------------
     const CRITERIOS = {
         menor_excedente: {
@@ -223,7 +233,7 @@
         if (!regla) throw new Error('Criterio de selección desconocido: ' + criterio);
 
         // Solo compiten referencias comerciales viables. El módulo de
-        // referencia del TdR no es un producto real y solo se usa si se elige
+        // caso de prueba no es un producto real y solo se usa si se elige
         // a mano para reproducir el caso de prueba.
         const candidatos = evaluaciones.filter(e => e.viable && !e.modulo.referenciaTdR);
         if (candidatos.length === 0) return null;
@@ -235,7 +245,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // Validación de entradas (RF-24)
+    // Validación de entradas
     // ---------------------------------------------------------------------
     // ---------------------------------------------------------------------
     // Método propio (docs/METODO_PROPIO.md): balance día/noche con factor
@@ -292,6 +302,7 @@
             moduloManualId = null, diasOperacionAnio = 365,
             metodoPotencia = 'referencia', etaBat = 0.85, crecimientoPct = 0,
             coberturaPct = 100, contexto = null,
+            potenciaMinimaKWp = null, modulosSerieFijo = null, moduloFijadoPorAjuste = false,
         } = entrada;
         if (!METODOS_POTENCIA[metodoPotencia]) throw new Error('Método de cálculo desconocido: ' + metodoPotencia);
 
@@ -304,7 +315,7 @@
         const hspCritico = recurso.mesCritico.valor;
         const hspUsada = criterioRecurso === 'anual' ? hspAnual : hspCritico;
         if (hspUsada < RANGOS.hsp[0] || hspUsada > RANGOS.hsp[1]) {
-            advertencias.push('La irradiación usada (' + hspUsada.toFixed(2) + ' kWh/m²·día) está fuera del rango razonable de ' + RANGOS.hsp[0] + ' a ' + RANGOS.hsp[1] + '.');
+            advertencias.push('La irradiación usada (' + fx(hspUsada, 2) + ' kWh/m²·día) está fuera del rango razonable de ' + RANGOS.hsp[0] + ' a ' + RANGOS.hsp[1] + '.');
         }
 
         const coincidencia = Array.isArray(perfilW)
@@ -356,7 +367,11 @@
             potenciaDisenoKWp: potenciaPicoKWp,
         };
 
-        const ctx = { potenciaPicoKWp, vMaxSistema, tMinC, tAmbOperacionC, areaDisponibleM2 };
+        // Ajuste aceptado en el balance de cierre del paso de conversión:
+        // el generador se dimensiona con la potencia requerida si es mayor.
+        const ajustePorCierre = potenciaMinimaKWp > potenciaPicoKWp + 1e-9;
+        const potenciaDimensionadoKWp = ajustePorCierre ? potenciaMinimaKWp : potenciaPicoKWp;
+        const ctx = { potenciaPicoKWp: potenciaDimensionadoKWp, vMaxSistema, tMinC, tAmbOperacionC, areaDisponibleM2, modulosSerieFijo };
         const evaluaciones = catalogo.map(m => evaluarModulo(m, ctx));
 
         let seleccion;
@@ -365,15 +380,20 @@
             seleccion = evaluaciones.find(e => e.id === moduloManualId) || null;
             if (!seleccion) throw new Error('El módulo elegido no está en el catálogo.');
             if (!seleccion.viable) throw new Error('El módulo elegido no es viable: ' + seleccion.motivoDescarte);
-            modoSeleccion = 'manual';
+            // Un módulo fijado por el ajuste del paso de conversión conserva la
+            // elección automática que se había hecho con el criterio.
+            modoSeleccion = moduloFijadoPorAjuste ? 'automatica' : 'manual';
         } else {
             seleccion = seleccionarModulo(evaluaciones, criterioSeleccion);
             if (!seleccion) throw new Error('Ningún módulo comercial del catálogo permite formar cadenas bajo ' + vMaxSistema + ' V.');
             modoSeleccion = 'automatica';
         }
 
+        if (modulosSerieFijo > 0 && seleccion.modulosSerie !== modulosSerieFijo) {
+            advertencias.push('La configuración de ' + modulosSerieFijo + ' módulos en serie elegida en el paso de conversión no cabe bajo ' + vMaxSistema + ' V con este módulo; se usó la configuración automática.');
+        }
         if (seleccion.cabeEnArea === false) {
-            advertencias.push('El generador ocupa ' + seleccion.areaGeneradorM2.toFixed(2) + ' m² y el área disponible es de ' + areaDisponibleM2 + ' m²: no cabe.');
+            advertencias.push('El generador ocupa ' + fx(seleccion.areaGeneradorM2, 2) + ' m² y el área disponible es de ' + areaDisponibleM2 + ' m²: no cabe.');
         }
         if (seleccion.modulosAdicionalesPorCadenas > 0) {
             advertencias.push('Para que todas las cadenas tengan el mismo número de módulos se instalan ' + seleccion.modulosAdicionalesPorCadenas + ' módulo(s) más de los estrictamente necesarios.');
@@ -389,6 +409,9 @@
             hspUsada,
             pr,
             potenciaPicoKWp,
+            potenciaDimensionadoKWp,
+            ajustePorCierre,
+            modulosSerieFijo: modulosSerieFijo > 0 ? modulosSerieFijo : null,
             potenciaPicoAnualKWp,
             potenciaPicoCriticoKWp,
             metodo,
@@ -410,12 +433,45 @@
         };
     }
 
+    // Contraste con una segunda fuente de recurso solar. La potencia pico es
+    // inversamente proporcional a la irradiación usada (Ppico = E / (HSP · PR)),
+    // así que con la segunda fuente se obtiene Ppico2 = Ppico1 · HSP1 / HSP2.
+    // Se acepta una diferencia de hasta ±15 % en la potencia pico.
+    const TOLERANCIA_SEGUNDA_FUENTE_PCT = 15;
+    function contrastarSegundaFuente(sitio, segunda, criterioRecurso, potenciaPicoKWp) {
+        if (!sitio || !segunda) return null;
+        const principal = analizarRecurso(sitio);
+        const otra = analizarRecurso({ nombre: segunda.fuente, irradiacionAnual: segunda.irradiacionAnual, mensual: segunda.mensual });
+        const dif = (b, a) => (b - a) / a * 100;
+        const hsp1 = criterioRecurso === 'anual' ? principal.anual : principal.mesCritico.valor;
+        const hsp2 = criterioRecurso === 'anual' ? otra.anual : otra.mesCritico.valor;
+        const potencia2 = potenciaPicoKWp * hsp1 / hsp2;
+        const difPotenciaPct = dif(potencia2, potenciaPicoKWp);
+        return {
+            fuente: segunda.fuente,
+            fechaConsulta: segunda.fechaConsulta || '',
+            inclinacionGrados: segunda.inclinacionGrados,
+            enLinea: !!segunda.enLinea,
+            anual: { principal: principal.anual, segunda: otra.anual, difPct: dif(otra.anual, principal.anual) },
+            critico: {
+                principal: principal.mesCritico.valor, mesPrincipal: principal.mesCritico.nombre,
+                segunda: otra.mesCritico.valor, mesSegunda: otra.mesCritico.nombre,
+                difPct: dif(otra.mesCritico.valor, principal.mesCritico.valor),
+            },
+            criterioRecurso,
+            potencia: { principal: potenciaPicoKWp, segunda: potencia2, difPct: difPotenciaPct },
+            toleranciaPct: TOLERANCIA_SEGUNDA_FUENTE_PCT,
+            dentroDeTolerancia: Math.abs(difPotenciaPct) <= TOLERANCIA_SEGUNDA_FUENTE_PCT,
+        };
+    }
+
     const Dimensionamiento = {
         DIAS_MES, NOMBRES_MES, CRITERIOS, RANGOS, FACTOR_NTC_2050, METODOS_POTENCIA,
         energiaEquivalenteBalance, factorCrecimiento, factorCobertura,
         energiaEnVentanaSolar, promedioAnualDesdeMensual, analizarRecurso,
         calcularPotenciaPicoKWp, temperaturaCelda, corregirPorTemperatura,
         evaluarModulo, seleccionarModulo, validarParametros, dimensionarGenerador,
+        contrastarSegundaFuente, TOLERANCIA_SEGUNDA_FUENTE_PCT,
     };
 
     if (typeof module !== 'undefined' && module.exports) module.exports = Dimensionamiento;
