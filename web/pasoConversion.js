@@ -20,7 +20,11 @@
     'hibrido-off-grid': 'Híbrido off-grid', 'hibrido-on-grid': 'Híbrido on-grid',
   };
 
-  const catalogo = { reguladores: [], inversores: [], baterias: [], origen: '' };
+  const catalogo = { reguladores: [], inversoresCargadores: [], inversores: [], baterias: [], origen: '' };
+  // Nombres según el tipo de equipo de conversión.
+  const NOMBRE_TIPO = { regulador: 'Regulador', inversorCargador: 'Inversor-cargador', inversor: 'Inversor' };
+  const NOMBRE_TIPO_PLURAL = { regulador: 'Reguladores', inversorCargador: 'Inversores-cargadores', inversor: 'Inversores' };
+  const SELECTOR_TIPO = { regulador: 'convRegulador', inversorCargador: 'convInversorCargador', inversor: 'convInversor' };
   let ramaElegidaPorUsuario = false;
   let tensionBancoEditada = false;
 
@@ -53,7 +57,7 @@
   function nombreEquipo(eq) {
     return eq.referenciaTdR ? eq.modelo : (eq.fabricante + ' ' + eq.modelo);
   }
-  // Nombre con el número de unidades cuando se usan varios reguladores en paralelo.
+  // Nombre con el número de unidades cuando se usan varios equipos en paralelo.
   function nombreConUnidades(v) {
     return (v.unidades > 1 ? v.unidades + ' × ' : '') + nombreEquipo(v.equipo);
   }
@@ -85,6 +89,8 @@
       if (!e.id) faltan.push(nombre + ' ' + (i + 1) + ': id');
     });
     revisar(c.reguladores, 'Regulador', ['vocMaxV', 'corrienteSalidaA']);
+    if (c.inversoresCargadores !== undefined && !Array.isArray(c.inversoresCargadores)) throw new Error('La lista "inversoresCargadores" debe ser una lista.');
+    revisar(c.inversoresCargadores || [], 'Inversor-cargador', ['pacW', 'vocMaxV', 'corrienteSalidaA']);
     revisar(c.inversores, 'Inversor', ['pacW', 'vocMaxV', 'mpptMinV', 'mpptMaxV', 'impMaxA', 'iscMaxA']);
     revisar(c.baterias, 'Batería', ['tensionV', 'capacidadAh']);
     if (faltan.length) throw new Error('Faltan valores o no son válidos: ' + faltan.slice(0, 6).join('; ') + (faltan.length > 6 ? '…' : '') + '.');
@@ -92,13 +98,14 @@
 
   function usarCatalogo(c, origen) {
     catalogo.reguladores = c.reguladores;
+    catalogo.inversoresCargadores = c.inversoresCargadores || [];
     catalogo.inversores = c.inversores;
     catalogo.baterias = c.baterias;
     catalogo.origen = origen;
     catalogo.original = c;
     poblarSelectores();
     $('convResumenCatalogo').textContent =
-      catalogo.reguladores.length + ' reguladores MPPT, ' + catalogo.inversores.length + ' inversores de red y ' +
+      catalogo.inversoresCargadores.length + ' inversores-cargadores con MPPT integrado, ' + catalogo.reguladores.length + ' reguladores MPPT, ' + catalogo.inversores.length + ' inversores de red y ' +
       catalogo.baterias.length + ' baterías (' + Array.from(new Set(catalogo.baterias.map(b => b.tecnologia))).join(', ') + '). ' +
       'Cada equipo declara la ficha técnica de la que se tomaron sus valores. Para agregar o corregir un equipo, descargue el catálogo, edítelo y vuelva a cargarlo.';
   }
@@ -121,6 +128,7 @@
       if (previo !== '' && lista.some(e => e.id === previo)) sel.value = previo;
     };
     llenar($('convRegulador'), catalogo.reguladores, 'Automático: ' + C.CRITERIOS_EQUIPO.regulador.nombre.toLowerCase());
+    llenar($('convInversorCargador'), catalogo.inversoresCargadores, 'Automático: ' + C.CRITERIOS_EQUIPO.inversorCargador.nombre.toLowerCase());
     llenar($('convInversor'), catalogo.inversores, 'Automático: ' + C.CRITERIOS_EQUIPO.inversor.nombre.toLowerCase());
     // Primero las baterías comerciales; las del caso de prueba quedan al final.
     const selBat = $('convBateria');
@@ -136,6 +144,7 @@
   }
 
   function resumenEquipo(e) {
+    if (typeof e.corrienteSalidaA === 'number' && typeof e.pacW === 'number') return ' — ' + num(e.pacW, 0) + ' W / ' + e.vocMaxV + ' V / ' + e.corrienteSalidaA + ' A';
     if (typeof e.corrienteSalidaA === 'number') return ' — ' + e.vocMaxV + ' V / ' + e.corrienteSalidaA + ' A';
     if (typeof e.pacW === 'number') return ' — ' + num(e.pacW, 0) + ' W';
     if (typeof e.capacidadAh === 'number') return ' — ' + num(e.tensionV, 1) + ' V / ' + num(e.capacidadAh, e.capacidadAh % 1 ? 2 : 0) + ' Ah';
@@ -229,6 +238,45 @@
   }
   const unidadAutonomia = (n, modo) => num(n, n % 1 ? 1 : 0) + (modo === 'noche' ? (n === 1 ? ' noche' : ' noches') : (n === 1 ? ' día' : ' días'));
 
+  function equipoCarga() {
+    const marcado = document.querySelector('input[name="equipoCarga"]:checked');
+    return marcado && marcado.value === 'regulador' ? 'regulador' : 'todoEnUno';
+  }
+
+  function tipoEquipoActual() {
+    if (ramaActual() !== 'con') return 'inversor';
+    return C.EQUIPOS_CARGA[equipoCarga()].tipo;
+  }
+
+  const TEXTOS_EQUIPO = {
+    inversorCargador: {
+      titulo: '¿Qué equipo conecta los paneles a las baterías?',
+      ayuda: 'El inversor-cargador (todo en uno) trae el regulador MPPT por dentro: recibe la energía de los paneles, carga las baterías y alimenta las cargas en corriente alterna. Abajo están los del catálogo con su resultado: la aplicación elige el que mejor se ajusta, y usted puede elegir otro.',
+    },
+    regulador: {
+      titulo: '¿Qué equipo conecta los paneles a las baterías?',
+      ayuda: 'El regulador (controlador de carga MPPT) recibe la energía de los paneles y carga las baterías sin dañarlas; las cargas se alimentan con un inversor aparte. Abajo están los del catálogo con su resultado: la aplicación elige el que mejor se ajusta, y usted puede elegir otro.',
+    },
+    inversor: {
+      titulo: '¿Qué inversor entrega la energía a la red?',
+      ayuda: 'El inversor de red convierte la energía de los paneles en corriente alterna y la entrega a la instalación y a la red. Abajo están los del catálogo con su resultado: la aplicación elige el que mejor se ajusta, y usted puede elegir otro.',
+    },
+  };
+
+  function actualizarTextosEquipo() {
+    const tipo = tipoEquipoActual();
+    $('convTituloEquipos').textContent = TEXTOS_EQUIPO[tipo].titulo;
+    $('convAyudaEquipos').textContent = TEXTOS_EQUIPO[tipo].ayuda;
+    $('convSelectorCarga').hidden = ramaActual() !== 'con';
+    Array.from(document.querySelectorAll('#convSelectorCarga .opcion-autonomia')).forEach(op => op.classList.toggle('is-selected', op.querySelector('input').checked));
+  }
+
+  function fijarEquipoCarga(valor) {
+    const radio = document.querySelector('input[name="equipoCarga"][value="' + C.equipoCargaValido(valor) + '"]');
+    if (radio) radio.checked = true;
+    actualizarTextosEquipo();
+  }
+
   function ramaActual() {
     const marcado = document.querySelector('input[name="ramaConv"]:checked');
     return marcado ? marcado.value : 'con';
@@ -240,10 +288,7 @@
     $('convEntradasCon').hidden = rama !== 'con';
     $('convEntradasSin').hidden = rama !== 'sin';
     $('convNumEquipo').textContent = rama === 'con' ? '4' : '3';
-    $('convTituloEquipos').textContent = rama === 'con' ? '¿Qué regulador conecta los paneles a las baterías?' : '¿Qué inversor entrega la energía a la red?';
-    $('convAyudaEquipos').textContent = rama === 'con'
-      ? 'El regulador (controlador de carga MPPT) recibe la energía de los paneles y carga las baterías sin dañarlas. Abajo están los del catálogo con su resultado: la aplicación elige el que mejor se ajusta, y usted puede elegir otro.'
-      : 'El inversor de red convierte la energía de los paneles en corriente alterna y la entrega a la instalación y a la red. Abajo están los del catálogo con su resultado: la aplicación elige el que mejor se ajusta, y usted puede elegir otro.';
+    actualizarTextosEquipo();
     Array.from(document.querySelectorAll('.opcion-rama')).forEach(op => op.classList.toggle('is-selected', op.querySelector('input').checked));
   }
 
@@ -287,7 +332,8 @@
         etaBat: n('convEtaBat'),
         bateria: bateriaSeleccionada(),
         bateriasComparar: catalogo.baterias,
-        equipoManualId: $('convRegulador').value || null,
+        equipoCarga: equipoCarga(),
+        equipoManualId: $(SELECTOR_TIPO[tipoEquipoActual()]).value || null,
       });
     }
     return Object.assign(comun, {
@@ -382,6 +428,15 @@
       { titulo: 'Corriente al banco', ids: ['salida'], u: 'A' },
       { titulo: 'Isc por entrada', ids: ['isc'], u: 'A' },
     ],
+    inversorCargador: [
+      { titulo: 'Voc en frío', ids: ['voc'], u: 'V' },
+      { titulo: 'Arranque', ids: ['arranque'], u: 'V' },
+      { titulo: 'Ventana MPPT', ids: ['mpptMin', 'mpptMax'], u: 'V' },
+      { titulo: 'Corriente al banco', ids: ['salida'], u: 'A' },
+      { titulo: 'Potencia FV', ids: ['pfv'], u: 'W' },
+      { titulo: 'Potencia de salida', ids: ['pac'], u: 'W' },
+      { titulo: 'Isc por entrada', ids: ['isc'], u: 'A' },
+    ],
     inversor: [
       { titulo: 'Voc en frío', ids: ['voc'], u: 'V' },
       { titulo: 'Ventana MPPT', ids: ['mpptMin', 'mpptMax'], u: 'V' },
@@ -406,10 +461,11 @@
       contenido = valores.join(' / ') + ' V<small>ventana ' + limites + ' V</small>';
     } else {
       const c = crits[0];
-      const val = col.u === '' ? num(c.valor, 2) : num(c.valor, 1) + ' ' + col.u;
+      const val = col.u === '' ? num(c.valor, 2) : num(c.valor, col.u === 'W' ? 0 : 1) + ' ' + col.u;
       const lim = c.id === 'dcac'
         ? 'rango ' + num(c.limite[0], 2) + '–' + num(c.limite[1], 2)
-        : (['arranque', 'mpptMin'].includes(c.id) ? '≥ ' : '≤ ') + num(c.limite, c.limite % 1 ? 1 : 0) + ' ' + col.u;
+        : c.id === 'pac' ? 'demanda ' + num(c.limite, 0) + ' W'
+          : (['arranque', 'mpptMin'].includes(c.id) ? '≥ ' : '≤ ') + num(c.limite, c.limite % 1 ? 1 : 0) + ' ' + col.u;
       contenido = val + '<small>' + lim + '</small>';
     }
     const titulo = crits.map(c => c.nombre + ': ' + c.texto).join(' · ');
@@ -443,18 +499,23 @@
   const VEREDICTO_SENCILLO = { cumple: 'Funciona', alerta: 'Funciona con observaciones', no_cumple: 'No funciona con sus paneles', no_aplica: 'Sin dato' };
 
   function razonSencilla(c, tipo, unidades) {
-    const cada = unidades > 1 ? 'Cada uno de los ' + unidades + ' reguladores recibe' : 'Sus paneles pueden mandar';
+    const cada = unidades > 1 ? 'Cada uno de los ' + unidades + (tipo === 'inversorCargador' ? ' equipos' : ' reguladores') + ' recibe' : 'Sus paneles pueden mandar';
     const v1 = num(c.valor, 1);
     const lim = typeof c.limite === 'number' ? num(c.limite, c.limite % 1 ? 1 : 0) : '';
     switch (c.id) {
       case 'voc': return 'En días fríos sus paneles pueden llegar a ' + v1 + ' V y este equipo aguanta como máximo ' + lim + ' V: se dañaría.';
-      case 'arranque': return 'Con calor sus paneles bajan a ' + v1 + ' V y el equipo necesita al menos ' + lim + ' V para ' + (tipo === 'regulador' ? 'empezar a cargar las baterías.' : 'arrancar.');
+      case 'arranque': return 'Con calor sus paneles bajan a ' + v1 + ' V y el equipo necesita al menos ' + lim + ' V para ' + (tipo === 'inversor' ? 'arrancar.' : 'empezar a cargar las baterías.');
       case 'mpptMin': return 'Con calor sus paneles bajan a ' + v1 + ' V y el equipo necesita al menos ' + lim + ' V para trabajar.';
       case 'mpptMax': return 'En días fríos sus paneles trabajan a ' + v1 + ' V y el equipo admite hasta ' + lim + ' V.';
       case 'salida': return cada + ' ' + v1 + ' A y el equipo carga como máximo ' + lim + ' A: en las horas de más sol se pierde cerca del ' + num((1 - c.limite / c.valor) * 100, 0) + ' % de la energía.';
       case 'isc': return c.estado === 'no_aplica'
         ? 'La ficha no dice cuánta corriente de cortocircuito soporta: confírmelo con el fabricante.'
-        : 'En un cortocircuito ' + (unidades > 1 ? 'el grupo de paneles de cada regulador da ' : 'sus paneles dan ') + v1 + ' A y el equipo soporta ' + lim + ' A.';
+        : 'En un cortocircuito ' + (unidades > 1 ? 'el grupo de paneles de cada equipo da ' : 'sus paneles dan ') + v1 + ' A y el equipo soporta ' + lim + ' A.';
+      case 'pfv': return c.estado === 'no_aplica'
+        ? 'La ficha no dice cuánta potencia de paneles admite: confírmelo con el fabricante.'
+        : (unidades > 1 ? 'Cada equipo recibe ' : 'Sus paneles suman ') + num(c.valor, 0) + ' W y el equipo admite como máximo ' + num(c.limite, 0) + ' W de paneles.';
+      case 'pac': return (unidades > 1 ? 'Los ' + unidades + ' equipos juntos entregan ' : 'El equipo entrega ') + num(c.valor, 0) + ' W y la demanda máxima del proyecto es de ' + num(c.limite, 0) + ' W: no alcanza a alimentar todas las cargas a la vez.';
+      case 'tensionBanco': return 'El equipo trabaja con baterías de ' + c.limite.map(x => num(x, 0)).join(', ') + ' V y el sistema está en ' + num(c.valor, 0) + ' V: cambie la tensión del sistema o use otro equipo.';
       case 'imp': return 'Sus paneles trabajan con ' + v1 + ' A por entrada y el equipo admite ' + lim + ' A.';
       case 'dcac': return c.valor > c.limite[1]
         ? 'El inversor es pequeño para sus paneles (relación ' + num(c.valor, 2) + ', se acepta hasta ' + num(c.limite[1], 2) + '): en las horas de más sol se pierde algo de energía.'
@@ -467,13 +528,23 @@
     const lista = v.criterios.filter(c => c.estado === 'no_cumple' || c.estado === 'alerta' || (c.estado === 'no_aplica' && c.id === 'isc'))
       .sort((a, b) => PEOR.indexOf(a.estado) - PEOR.indexOf(b.estado));
     const razones = lista.map(c => ({ estado: c.estado === 'no_aplica' ? 'info' : c.estado, texto: razonSencilla(c, tipo, v.unidades) }));
-    if (v.unidades > 1) {
+    if (v.unidades > 1 && tipo === 'inversorCargador') {
+      const conPaneles = v.grupos.filter(x => x > 0).length;
+      razones.unshift({ estado: 'paralelo', texto: 'Se necesitan ' + v.unidades + ' equipos en paralelo sobre el mismo banco, que juntos entregan ' + num(v.potenciaSalidaW, 0) + ' W. ' +
+        (conPaneles > 1 ? 'Los paneles se reparten en ' + conPaneles + ' grupos (' + v.grupos.filter(x => x > 0).join(' + ') + ' filas) y cada grupo va a un equipo. ' : '') + 'La ficha permite hasta ' + v.equipo.maxParalelo + ' unidades.' });
+    } else if (v.unidades > 1) {
       razones.unshift({ estado: 'paralelo', texto: 'Se necesitan ' + v.unidades + ' reguladores en paralelo cargando el mismo banco: los paneles se reparten en ' + v.unidades + ' grupos (' + v.grupos.join(' + ') + ' filas) y cada grupo va a su regulador. La ficha permite hasta ' + v.equipo.maxParalelo + ' unidades.' });
     }
     return razones;
   }
 
   function datosFicha(eq) {
+    if (typeof eq.corrienteSalidaA === 'number' && typeof eq.pacW === 'number') {
+      return 'Inversor de ' + num(eq.pacW, 0) + ' W' + (typeof eq.potenciaPicoVA === 'number' ? ' (pico ' + num(eq.potenciaPicoVA, 0) + ' VA)' : '') + ' · carga hasta ' + eq.corrienteSalidaA + ' A desde los paneles · aguanta hasta ' + eq.vocMaxV + ' V' +
+        (typeof eq.mpptMinV === 'number' ? ' · trabaja desde ' + eq.mpptMinV + ' V' : '') +
+        (Array.isArray(eq.tensionesBateriaV) ? ' · baterías de ' + eq.tensionesBateriaV.join(', ') + ' V' : '') +
+        (typeof eq.maxParalelo === 'number' && eq.maxParalelo > 1 ? ' · hasta ' + eq.maxParalelo + ' en paralelo' : '');
+    }
     if (typeof eq.corrienteSalidaA === 'number') {
       return 'Aguanta hasta ' + eq.vocMaxV + ' V de los paneles · carga hasta ' + eq.corrienteSalidaA + ' A' + (typeof eq.mpptMinV === 'number' ? ' · trabaja desde ' + eq.mpptMinV + ' V' : '') +
         (typeof eq.maxParalelo === 'number' && eq.maxParalelo > 1 ? ' · hasta ' + eq.maxParalelo + ' en paralelo' : '');
@@ -515,7 +586,7 @@
     $('convGrupoReferencia').hidden = referencia.length === 0;
     $('convResumenReferencia').textContent = 'Equipos del caso de prueba (' + referencia.length + ')';
     if (r.seleccion && r.seleccion.equipo.referenciaTdR) $('convGrupoReferencia').open = true;
-    const sel = r.tipoEquipo === 'regulador' ? $('convRegulador') : $('convInversor');
+    const sel = $(SELECTOR_TIPO[r.tipoEquipo]);
     $('convCriterio').innerHTML = r.modoSeleccion === 'automatica'
       ? (r.seleccion
         ? 'La aplicación eligió <strong>' + escapar(nombreConUnidades(r.seleccion)) + '</strong>' + (r.seleccion.unidades > 1 ? ' (en paralelo)' : '') + ' con este criterio: ' + escapar(r.criterioSeleccion.explicacion)
@@ -559,13 +630,16 @@
     const nPaneles = g.modulosSerie * g.cadenasParalelo;
     items.push({ estado: 'cumple', titulo: 'Paneles', texto: nPaneles + ' paneles de ' + g.modulo.potenciaW + ' W (' + num(r.potenciaGeneradorW / 1000, 2) + ' kWp), en ' + g.cadenasParalelo + (g.cadenasParalelo === 1 ? ' fila' : ' filas') + ' de ' + g.modulosSerie + '. Vienen del Paso 4.' +
       (conv.ajuste ? ' Ya incluyen los cambios hechos aquí.' : '') });
-    const tipoNombre = r.tipoEquipo === 'regulador' ? 'Regulador' : 'Inversor';
+    const tipoNombre = NOMBRE_TIPO[r.tipoEquipo];
     if (r.seleccion) {
       const razones = razonesDe(r.seleccion, r.tipoEquipo).filter(x => x.estado !== 'info');
       const enParalelo = r.seleccion.unidades > 1;
       const problema = razones.find(x => x.estado !== 'paralelo');
-      items.push({ estado: r.seleccion.veredicto, titulo: enParalelo ? 'Reguladores' : tipoNombre,
-        texto: (enParalelo ? r.seleccion.unidades + ' × ' + nombreEquipo(r.seleccion.equipo) + ' en paralelo, cada uno con un grupo de paneles (' + r.seleccion.grupos.join(' + ') + ' filas)' : nombreEquipo(r.seleccion.equipo)) +
+      const textoParalelo = !enParalelo ? '' : r.tipoEquipo === 'inversorCargador'
+        ? r.seleccion.unidades + ' × ' + nombreEquipo(r.seleccion.equipo) + ' en paralelo (' + num(r.seleccion.potenciaSalidaW, 0) + ' W en total)'
+        : r.seleccion.unidades + ' × ' + nombreEquipo(r.seleccion.equipo) + ' en paralelo, cada uno con un grupo de paneles (' + r.seleccion.grupos.join(' + ') + ' filas)';
+      items.push({ estado: r.seleccion.veredicto, titulo: enParalelo ? NOMBRE_TIPO_PLURAL[r.tipoEquipo] : tipoNombre,
+        texto: (enParalelo ? textoParalelo : nombreEquipo(r.seleccion.equipo)) +
           ': ' + (problema ? problema.texto : 'funciona' + (enParalelo ? 'n' : '') + ' con sus paneles.') });
     } else {
       const mejor = mejorReorganizacion(r);
@@ -589,7 +663,7 @@
       if (bal.hayDeficit) {
         const n = bal.usado.modulosAdicionales;
         items.push({ estado: 'no_cumple', titulo: '¿Alcanza la energía?', texto: 'No. Las baterías y el inversor pierden una parte de la energía; para cubrir el consumo ' + (n === 1 ? 'falta 1 panel' : 'faltan ' + n + ' paneles') + '.' });
-        accion = '<button type="button" class="btn btn-primary" id="btnAplicarAjuste">Agregar ' + (n === 1 ? '1 panel' : n + ' paneles') + ' al generador</button>';
+        accion = accionEquipo + '<button type="button" class="btn ' + (accionEquipo ? 'btn-secondary' : 'btn-primary') + '" id="btnAplicarAjuste">Agregar ' + (n === 1 ? '1 panel' : n + ' paneles') + ' al generador</button>';
       } else if (!r.recuperacion.seRecupera) {
         items.push({ estado: 'alerta', titulo: '¿Alcanza la energía?', texto: 'Cubre el consumo, pero si el banco se descarga del todo, las baterías no se vuelven a llenar.' });
       } else {
@@ -616,7 +690,7 @@
     if (btn) btn.addEventListener('click', () => aplicarAjusteDeCierre(r.balance));
     const reorganizar = $('btnReorganizarSugerido');
     if (reorganizar) reorganizar.addEventListener('click', () => {
-      (r.tipoEquipo === 'regulador' ? $('convRegulador') : $('convInversor')).value = '';
+      $(SELECTOR_TIPO[r.tipoEquipo]).value = '';
       const ajuste = window.UIGenerador.obtenerAjusteConversion() || {};
       window.UIGenerador.aplicarAjusteConversion({ potenciaMinimaKWp: ajuste.potenciaMinimaKWp || null, modulosSerieFijo: Number(reorganizar.dataset.serie) });
     });
@@ -644,7 +718,11 @@
     const v = r.seleccion;
     const eq = v.equipo;
     const datos = [];
-    if (r.tipoEquipo === 'regulador') {
+    if (r.tipoEquipo === 'inversorCargador') {
+      datos.push(['Potencia de salida', num(v.potenciaSalidaW, 0) + ' W', (v.unidades > 1 ? v.unidades + ' × ' + num(eq.pacW, 0) + ' W · ' : '') + 'demanda máxima ' + num(estado.conversion.entradas.demandaMaximaW, 0) + ' W' +
+        (v.potenciaPicoVA ? ' · pico ' + num(v.potenciaPicoVA, 0) + ' VA' : '')]);
+      datos.push([v.unidades > 1 ? 'Corriente al banco por equipo' : 'Corriente al banco', num(v.corrienteBancoA, 1) + ' A', (v.unidades > 1 ? 'total ' + num(v.corrienteBancoTotalA, 1) + ' A · ' : '') + 'Ppico / Vnominal · máximo ' + eq.corrienteSalidaA + ' A']);
+    } else if (r.tipoEquipo === 'regulador') {
       if (v.unidades > 1) {
         datos.push(['Reguladores en paralelo', String(v.unidades), 'grupos de ' + v.grupos.join(' + ') + ' cadenas · la ficha permite hasta ' + v.equipo.maxParalelo]);
         datos.push(['Corriente por regulador', num(v.corrienteBancoA, 1) + ' A', 'total al banco ' + num(v.corrienteBancoTotalA, 1) + ' A = Ppico / Vnominal']);
@@ -658,7 +736,7 @@
     datos.push(['Corriente de conductores', num(r.corrienteConductoresA, 1) + ' A', '1,25 × Isc del generador (NTC 2050, 690-8); no se usa para el equipo']);
     caja.className = 'veredicto-equipo veredicto-' + v.veredicto;
     caja.innerHTML = '<div class="veredicto-cabecera">' + chip(v.veredicto) +
-      '<div><strong>' + escapar((r.tipoEquipo === 'regulador' ? (v.unidades > 1 ? 'Reguladores ' : 'Regulador ') : 'Inversor ') + nombreConUnidades(v)) + '</strong>' +
+      '<div><strong>' + escapar((v.unidades > 1 ? NOMBRE_TIPO_PLURAL[r.tipoEquipo] : NOMBRE_TIPO[r.tipoEquipo]) + ' ' + nombreConUnidades(v)) + '</strong>' +
       '<span>' + escapar(r.modoSeleccion === 'automatica' ? 'Elegido automáticamente' : 'Elegido de forma manual') +
       (v.veredicto === 'cumple' ? ' · admite el generador sin observaciones.' : v.veredicto === 'alerta' ? ' · admite el generador con observaciones.' : ' · no admite el generador; vea qué falla en la tabla.') + '</span></div></div>' +
       '<div class="indicadores indicadores-compactos">' + tarjetas(datos) + '</div>' +
@@ -841,11 +919,16 @@
     ];
     if (r.rama === 'con') {
       const b = r.banco;
+      const todoEnUno = r.tipoEquipo === 'inversorCargador';
+      lista.push('Equipo que carga el banco: ' + C.EQUIPOS_CARGA[r.equipoCarga].nombre.toLowerCase() + '. ' + C.EQUIPOS_CARGA[r.equipoCarga].descripcion);
       lista.push(
-        'Corriente de salida al banco = Ppico / Vnominal = ' + num(r.potenciaGeneradorW, 0) + ' / ' + num(e.vNominalV, 0) + ' = ' + num(r.potenciaGeneradorW / e.vNominalV, 1) + ' A, sin el factor 1,25. Si supera la corriente del regulador, el equipo limita la carga y recorta potencia: se marca como alerta.',
-        'Reguladores en paralelo: si la ficha del regulador permite varias unidades sobre el mismo banco (maxParalelo), las cadenas se reparten en k grupos y cada grupo va a su regulador. Se usa el menor k con el que cada unidad cumple: la corriente al banco y el Isc se revisan con el grupo más grande; las tensiones no cambian porque todas las cadenas son iguales.' +
-          (r.seleccion && r.seleccion.unidades > 1 ? ' Para este generador: ' + r.seleccion.unidades + ' × ' + nombreEquipo(r.seleccion.equipo) + ', grupos de ' + r.seleccion.grupos.join(' + ') + ' cadenas, ' + num(r.seleccion.corrienteBancoA, 1) + ' A por regulador.' : ''),
-        'Arranque del regulador: la tensión Vmp en caliente debe superar la del banco en 5 V (' + num(e.vBancoV + C.MARGEN_ARRANQUE_V, 1) + ' V).',
+        'Corriente de salida al banco = Ppico / Vnominal = ' + num(r.potenciaGeneradorW, 0) + ' / ' + num(e.vNominalV, 0) + ' = ' + num(r.potenciaGeneradorW / e.vNominalV, 1) + ' A, sin el factor 1,25. Si supera la corriente de carga ' + (todoEnUno ? 'solar del inversor-cargador' : 'del regulador') + ', el equipo limita la carga y recorta potencia: se marca como alerta.',
+        todoEnUno
+          ? 'Inversor-cargador: su entrada solar se verifica como un regulador MPPT (Voc en frío, arranque, ventana MPPT, corriente al banco e Isc) y, además: la potencia de los paneles de cada equipo no supera la potencia FV máxima de la ficha; la potencia de salida (k · Pac) cubre la demanda máxima del Paso 3 (' + num(e.demandaMaximaW, 0) + ' W); y la tensión del sistema está entre las que admite la ficha. Si la ficha permite varias unidades en paralelo (maxParalelo), se usa el menor número con el que todo cumple; los paneles se reparten entre los equipos y la potencia de salida se suma.' +
+            (r.seleccion && r.seleccion.unidades > 1 ? ' Para este proyecto: ' + r.seleccion.unidades + ' × ' + nombreEquipo(r.seleccion.equipo) + ' = ' + num(r.seleccion.potenciaSalidaW, 0) + ' W de salida, ' + num(r.seleccion.corrienteBancoA, 1) + ' A al banco por equipo.' : '')
+          : 'Reguladores en paralelo: si la ficha del regulador permite varias unidades sobre el mismo banco (maxParalelo), las cadenas se reparten en k grupos y cada grupo va a su regulador. Se usa el menor k con el que cada unidad cumple: la corriente al banco y el Isc se revisan con el grupo más grande; las tensiones no cambian porque todas las cadenas son iguales.' +
+            (r.seleccion && r.seleccion.unidades > 1 ? ' Para este generador: ' + r.seleccion.unidades + ' × ' + nombreEquipo(r.seleccion.equipo) + ', grupos de ' + r.seleccion.grupos.join(' + ') + ' cadenas, ' + num(r.seleccion.corrienteBancoA, 1) + ' A por regulador.' : ''),
+        'Arranque ' + (todoEnUno ? 'del cargador solar' : 'del regulador') + ': la tensión Vmp en caliente debe superar la del banco en 5 V (' + num(e.vBancoV + C.MARGEN_ARRANQUE_V, 1) + ' V).',
         'Todas las cargas se alimentan en CA a través del inversor: Ecc = Ed / η_inv = ' + num(e.energiaDiariaKWh * 1000, 0) + ' / ' + num(e.etaInv, 2) + ' = ' + num(b.eccWh, 1) + ' Wh/día.',
         b.modoAutonomia === 'noche'
           ? 'Autonomía por consumo nocturno (método propio): el banco cubre la energía de las horas fuera de la ventana solar del Paso 3, E_noche = ' + num(b.energiaNocheKWh, 3) + ' kWh, durante N = ' + num(e.autonomiaDias, 1) + ' noche(s). Ecc_noche = E_noche / η_inv = ' + num(b.eccBancoWh, 1) + ' Wh; Cn[Wh] = Ecc_noche · N / (DoD · fT) = ' + num(b.eccBancoWh, 1) + ' · ' + num(e.autonomiaDias, 1) + ' / (' + num(e.dodPct / 100, 2) + ' · ' + num(e.fT, 2) + ') = ' + num(b.cnWh, 0) + ' Wh; Cn[Ah] = Cn[Wh] / Vbanco = ' + num(b.cnAh, 1) + ' Ah. De día los paneles alimentan las cargas directamente.'
@@ -867,6 +950,9 @@
     const conMotor = motores.length ? ' Cargas con motor en este proyecto: ' + motores.map(c => c.descripcion + ' (' + num(c.potenciaTotalW, 0) + ' W)').join(', ') + '.' : '';
     if (r.rama === 'sin') {
       lista.push('Arranque de bombas y motores: el inversor de red sigue la tensión y la frecuencia de la red y solo inyecta la energía de los paneles; la corriente de arranque de las cargas la entrega la red, por eso no se usa para elegir este inversor. Si la red falla, el inversor se apaga por protección antiisla y no alimenta las cargas.' + conMotor);
+    } else if (r.tipoEquipo === 'inversorCargador') {
+      const pico = r.seleccion && r.seleccion.potenciaPicoVA ? ' Su ficha declara ' + num(r.seleccion.potenciaPicoVA, 0) + ' VA de pico' + (r.seleccion.unidades > 1 ? ' entre los ' + r.seleccion.unidades + ' equipos' : '') + '; verifique que el arranque de la carga mayor con las demás funcionando no lo supere.' : '';
+      lista.push('Arranque de bombas y motores: el inversor-cargador forma la red y debe soportar el arranque de la carga mayor con las demás funcionando. Se verifica que su potencia nominal cubra la demanda máxima; la corriente de arranque de cada motor no está en el cuadro de cargas.' + pico + conMotor);
     } else {
       lista.push('Arranque de bombas y motores: el inversor de baterías que alimenta las cargas forma la red y debe soportar el arranque de la carga mayor con las demás funcionando; ese inversor no se dimensiona en este paso, así que en su ficha debe verificarse la potencia de sobrecarga frente a la demanda máxima más el arranque.' + conMotor);
     }
@@ -888,12 +974,13 @@
   Array.from(document.querySelectorAll('input[name="modoAutonomia"]')).forEach(radio => radio.addEventListener('change', calcular));
   $('convVnom').addEventListener('input', () => { actualizarTensionBanco(); calcular(); });
   $('convVbanco').addEventListener('input', () => { tensionBancoEditada = true; calcular(); });
-  ['convRegulador', 'convInversor'].forEach(id => $(id).addEventListener('change', calcular));
+  ['convRegulador', 'convInversorCargador', 'convInversor'].forEach(id => $(id).addEventListener('change', calcular));
+  Array.from(document.querySelectorAll('input[name="equipoCarga"]')).forEach(radio => radio.addEventListener('change', () => { actualizarTextosEquipo(); calcular(); }));
   ['convEtaInvCon', 'convAutonomia', 'convDod', 'convFt', 'convEtaBat', 'convDcAcMin', 'convDcAcMax'].forEach(id => $(id).addEventListener('input', calcular));
   $('btnGuardarProyecto').addEventListener('click', calcular);
 
   $('btnDescargarEquipos').addEventListener('click', () => {
-    const datos = catalogo.original || { reguladores: catalogo.reguladores, inversores: catalogo.inversores, baterias: catalogo.baterias };
+    const datos = catalogo.original || { reguladores: catalogo.reguladores, inversoresCargadores: catalogo.inversoresCargadores, inversores: catalogo.inversores, baterias: catalogo.baterias };
     const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -929,7 +1016,9 @@
     return {
       rama: ramaActual(),
       ramaElegidaPorUsuario,
+      equipoCarga: equipoCarga(),
       reguladorId: $('convRegulador').value,
+      inversorCargadorId: $('convInversorCargador').value,
       inversorId: $('convInversor').value,
       bateriaId: $('convBateria').value,
       etaInv: Number($('convEtaInvCon').value),
@@ -951,6 +1040,7 @@
     if (!cfg) {
       tensionBancoEditada = false;
       document.querySelector('input[name="modoAutonomia"][value="dias"]').checked = true;
+      fijarEquipoCarga('todoEnUno');
       calcular();
       return;
     }
@@ -958,6 +1048,15 @@
     if (cfg.bateriaId && catalogo.baterias.some(b => b.id === cfg.bateriaId)) $('convBateria').value = cfg.bateriaId;
     if (typeof cfg.reguladorId === 'string' && (cfg.reguladorId === '' || catalogo.reguladores.some(e => e.id === cfg.reguladorId))) $('convRegulador').value = cfg.reguladorId;
     if (typeof cfg.inversorId === 'string' && (cfg.inversorId === '' || catalogo.inversores.some(e => e.id === cfg.inversorId))) $('convInversor').value = cfg.inversorId;
+    if (typeof cfg.inversorCargadorId === 'string' && (cfg.inversorCargadorId === '' || catalogo.inversoresCargadores.some(e => e.id === cfg.inversorCargadorId))) $('convInversorCargador').value = cfg.inversorCargadorId;
+    // Los proyectos guardados antes de esta opción usaban siempre un regulador;
+    // el Must PV18 estaba en esa lista y ahora es un inversor-cargador.
+    let carga = cfg.equipoCarga;
+    if (!carga && cfg.reguladorId && catalogo.inversoresCargadores.some(e => e.id === cfg.reguladorId)) {
+      carga = 'todoEnUno';
+      $('convInversorCargador').value = cfg.reguladorId;
+    }
+    fijarEquipoCarga(carga || 'regulador');
     asignar('convEtaInvCon', cfg.etaInv); asignar('convVnom', cfg.vNominalV); asignar('convVbanco', cfg.vBancoV);
     asignar('convAutonomia', cfg.autonomiaDias); asignar('convDod', cfg.dodPct); asignar('convFt', cfg.fT);
     asignar('convEtaBat', cfg.etaBat); asignar('convDcAcMin', cfg.dcAcMin); asignar('convDcAcMax', cfg.dcAcMax);

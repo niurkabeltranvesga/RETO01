@@ -276,8 +276,8 @@ function generarResumenPDF(proyecto, resultados, parametros, generador, conversi
     const ETQ = { cumple: 'Cumple', alerta: 'Alerta', no_cumple: 'No cumple' };
     const nombreEq = eq => eq.referenciaTdR ? eq.modelo + ' (caso de prueba)' : eq.fabricante + ' ' + eq.modelo;
     const items = [
-      ['Tipo de sistema', r.rama === 'con' ? 'Con baterías' : 'Sin baterías', r.rama === 'con' ? 'regulador y banco de baterías' : 'inversor conectado a la red'],
-      [r.tipoEquipo === 'regulador' ? (sel && sel.unidades > 1 ? 'Reguladores en paralelo' : 'Regulador') : 'Inversor', sel ? (sel.unidades > 1 ? sel.unidades + ' x ' : '') + sel.equipo.modelo : 'Ninguno sirve',
+      ['Tipo de sistema', r.rama === 'con' ? 'Con baterías' : 'Sin baterías', r.rama === 'con' ? (r.tipoEquipo === 'inversorCargador' ? 'inversor-cargador y banco de baterías' : 'regulador y banco de baterías') : 'inversor conectado a la red'],
+      [r.tipoEquipo === 'regulador' ? (sel && sel.unidades > 1 ? 'Reguladores en paralelo' : 'Regulador') : r.tipoEquipo === 'inversorCargador' ? (sel && sel.unidades > 1 ? 'Inversores-cargadores' : 'Inversor-cargador') : 'Inversor', sel ? (sel.unidades > 1 ? sel.unidades + ' x ' : '') + sel.equipo.modelo : 'Ninguno sirve',
         sel ? (sel.equipo.referenciaTdR ? 'caso de prueba' : sel.equipo.fabricante) + (sel.equipo.pacW ? ' · ' + fmt(sel.equipo.pacW, 0) + ' W' : '') + ' · ' + ETQ[sel.veredicto] : 'se requiere otro equipo', sel ? sel.veredicto : 'no_cumple'],
     ];
     if (r.rama === 'sin' && sel) items.push(['Relación DC/AC', fmt(sel.relacionDcAc, 2), 'rango ' + fmt(sel.rangoDcAc[0], 2) + ' a ' + fmt(sel.rangoDcAc[1], 2), (sel.criterios.find(k => k.id === 'dcac') || {}).estado]);
@@ -290,7 +290,9 @@ function generarResumenPDF(proyecto, resultados, parametros, generador, conversi
     if (r.rama === 'sin') {
       franja('Arranque de la bomba y otros motores: el inversor de red solo inyecta la energía de los paneles y la red entrega la corriente de arranque, por eso no se usa para elegir el inversor. Si la red falla, el inversor se apaga por protección antiisla.', null);
     } else {
-      franja('Arranque de motores: el inversor de baterías debe soportar el arranque de la carga mayor con las demás funcionando; verifique su potencia de sobrecarga en la ficha.', null);
+      franja(r.tipoEquipo === 'inversorCargador'
+        ? 'Arranque de motores: el inversor-cargador debe soportar el arranque de la carga mayor con las demás funcionando' + (sel && sel.potenciaPicoVA ? ' (su ficha declara ' + fmt(sel.potenciaPicoVA, 0) + ' VA de pico)' : '') + '.'
+        : 'Arranque de motores: el inversor de baterías debe soportar el arranque de la carga mayor con las demás funcionando; verifique su potencia de sobrecarga en la ficha.', null);
     }
     if (r.advertencias.length) franja('Alertas: ' + r.advertencias.slice(0, 2).join(' '), 'alerta');
   } else {

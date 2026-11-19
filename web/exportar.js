@@ -118,11 +118,13 @@
       salida.conversion = {
         rama: x.rama === 'con' ? 'con almacenamiento' : 'sin almacenamiento',
         tipoEquipo: x.tipoEquipo,
+        equipoCarga: x.rama === 'con' ? (x.equipoCarga === 'todoEnUno' ? 'inversor-cargador (todo en uno)' : 'regulador MPPT aparte') : null,
         equipo: sel ? sel.equipo.fabricante + ' ' + sel.equipo.modelo : null,
         unidadesEnParalelo: sel ? (sel.unidades || 1) : null,
         veredicto: sel ? ETIQUETA[sel.veredicto] || sel.veredicto : 'Ningún equipo del catálogo admite el generador',
         relacionDcAc: sel && typeof sel.relacionDcAc === 'number' ? r(sel.relacionDcAc, 2) : null,
         corrienteAlBanco_A: sel && typeof sel.corrienteBancoA === 'number' ? r(sel.corrienteBancoA, 1) : null,
+        potenciaSalida_W: sel && typeof sel.potenciaSalidaW === 'number' ? r(sel.potenciaSalidaW, 0) : null,
         corrienteConductoresFV_A: r(x.corrienteConductoresA, 1),
         alertas: x.advertencias.slice(),
         banco: x.banco ? {
@@ -223,11 +225,13 @@
     const v = d.conversion;
     if (v) {
       fila('Conversión', 'Rama', v.rama);
+      if (v.equipoCarga) fila('Conversión', 'Equipo que carga las baterías', v.equipoCarga);
       fila('Conversión', 'Equipo seleccionado', v.equipo || 'ninguno');
-      if (v.unidadesEnParalelo > 1) fila('Conversión', 'Reguladores en paralelo', v.unidadesEnParalelo);
+      if (v.unidadesEnParalelo > 1) fila('Conversión', v.tipoEquipo === 'inversorCargador' ? 'Inversores-cargadores en paralelo' : 'Reguladores en paralelo', v.unidadesEnParalelo);
       fila('Conversión', 'Veredicto', v.veredicto);
       if (v.relacionDcAc !== null) fila('Conversión', 'Relación DC/AC', v.relacionDcAc, '', 2);
       if (v.corrienteAlBanco_A !== null) fila('Conversión', 'Corriente al banco', v.corrienteAlBanco_A, 'A', 1);
+      if (v.potenciaSalida_W !== null && v.potenciaSalida_W !== undefined) fila('Conversión', 'Potencia de salida del inversor-cargador', v.potenciaSalida_W, 'W', 0);
       fila('Conversión', 'Corriente de los conductores FV (1,25 · Isc)', v.corrienteConductoresFV_A, 'A', 1);
       if (v.banco) {
         fila('Baterías', 'Batería', v.banco.bateria);

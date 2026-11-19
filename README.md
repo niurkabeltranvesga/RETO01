@@ -1,13 +1,13 @@
 # Plataforma de dimensionamiento fotovoltaico · Energía Solar Fotovoltaica
 
-**Versión 1.0.0 (26/10/2026)** · ver [CHANGELOG.md](CHANGELOG.md)
+**Versión 1.1.0 (19/11/2026)** · ver [CHANGELOG.md](CHANGELOG.md)
 
 Universidad del Magdalena · Electiva ESFV 2026-II
 Integrantes: Niurka Beltrán Vesga, Miguel Ángel Bernal López
 
 - **Reto 01:** caracterización del consumo energético (cuadro de cargas, perfil horario, energía y costos).
 - **Reto 02:** dimensionamiento del generador fotovoltaico (potencia pico, número de módulos, configuración en cadenas, tensiones, corrientes, área e informe), integrado en la misma aplicación web.
-- **Reto 03:** dimensionamiento del regulador o inversor MPPT y del banco de baterías (con y sin almacenamiento, balance de cierre e informe), integrado en la misma aplicación web.
+- **Reto 03:** dimensionamiento del regulador o inversor MPPT y del banco de baterías (con y sin almacenamiento, balance de cierre e informe), integrado en la misma aplicación web. Desde la versión 1.1.0, con baterías se puede usar un inversor-cargador con MPPT integrado (todo en uno), sin regulador aparte.
 - **Reto 04:** entrega formal de la plataforma: despliegue en línea, escenario del grupo F (Cartagena) precargado, contraste con una segunda fuente, informe de una página, exportación CSV/JSON, validaciones, pruebas, ayuda integrada y versionado.
 
 ### 🌐 Aplicación Web (Retos 01 a 04)

@@ -12,6 +12,12 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
+// Lee un Blob como texto (algunas versiones de jsdom no tienen Blob.text()).
+function leerBlob(b, win) {
+  if (typeof b.text === 'function') return b.text();
+  return new Promise(res => { const fr = new win.FileReader(); fr.onload = () => res(fr.result); fr.readAsText(b); });
+}
+
 const RAIZ = path.join(__dirname, '..');
 const leer = f => fs.readFileSync(path.join(RAIZ, f), 'utf-8');
 let fallas = 0;
@@ -115,11 +121,11 @@ async function main() {
   click('btnGenerarResumen');
   ok(paginas === 1 && /una página/.test($('estadoInforme').textContent), 'informe de una sola página (contenido hasta y = ' + maxY.toFixed(0) + ' mm)');
   click('btnExportarCSV');
-  const csv = await descargas[descargas.length - 1].text();
+  const csv = await leerBlob(descargas[descargas.length - 1], w);
   ok(/Energía diaria;32,688;kWh\/día/.test(csv) && /Costo unitario CU;1200;\$\/kWh/.test(csv) && /Días de operación al año;365;días/.test(csv), 'CSV con coma decimal, días y CU');
   ok(/Diferencia de potencia pico;5,4;%/.test(csv), 'CSV con la segunda fuente');
   click('btnExportarJSON');
-  const json = JSON.parse(await descargas[descargas.length - 1].text());
+  const json = JSON.parse(await leerBlob(descargas[descargas.length - 1], w));
   ok(json.consumo.energiaDiaria_kWh === 32.688 && json.consumo.horaDemandaMaxima === '16:00' && json.generador.segundaFuente.dentroDeTolerancia === true, 'JSON con los mismos resultados');
 
   console.log('\n=== 6. Casos borde de validación ===');

@@ -2,6 +2,7 @@
   "descripcion": "Catálogo de equipos de conversión y baterías. Archivo editable: para agregar un equipo basta copiar un bloque de su lista, cambiar los valores según la ficha técnica del fabricante y guardar. Cada equipo declara la ficha de la que se tomaron sus valores y la fecha de consulta. Los equipos marcados con referenciaTdR son los del caso de prueba estandarizado: no son productos comerciales y solo se eligen de forma manual.",
   "unidades": {
     "reguladores": "vocMaxV: tensión FV máxima en circuito abierto [V]; corrienteSalidaA: corriente nominal de carga al banco [A]; iscMaxA: corriente de cortocircuito FV máxima por entrada [A]; mpptMinV y mpptMaxV: ventana MPPT declarada para la tensión del banco [V] (opcional); entradasMppt: número de seguidores; maxParalelo: número máximo de unidades que el fabricante permite conectar en paralelo sobre el mismo banco (si la ficha no lo declara, se usa una sola unidad)",
+    "inversoresCargadores": "Equipos todo en uno (inversor-cargador) con regulador MPPT integrado, para sistemas con baterías: no necesitan un regulador aparte. pacW: potencia nominal de salida en CA [W]; potenciaPicoVA: potencia de pico (sobrecarga) [VA]; vocMaxV, mpptMinV, mpptMaxV, entradasMppt e iscMaxA: entrada FV, igual que en los reguladores; corrienteSalidaA: corriente máxima de carga solar al banco [A]; potenciaFvMaxW: potencia FV máxima que admite la entrada solar [W]; tensionesBateriaV: tensiones de banco que admite [V]; maxParalelo: unidades que el fabricante permite en paralelo",
     "inversores": "pacW: potencia nominal de salida en CA [W]; vocMaxV: tensión máxima de entrada [V]; mpptMinV y mpptMaxV: ventana MPPT [V]; arranqueV: tensión de arranque [V] (opcional); impMaxA: corriente máxima por entrada MPPT [A]; iscMaxA: cortocircuito máximo por entrada MPPT [A]; entradasMppt: número de seguidores",
     "baterias": "tensionV: tensión nominal de la unidad [V]; capacidadAh: capacidad nominal [Ah]; dodDisenoPct: profundidad de descarga de diseño [%]; eficienciaIdaVuelta: eficiencia en energía (0 a 1); limiteCargaC y limiteDescargaC: tasa C máxima recomendada; vidaAnios: vida de diseño [años]; dodDisenoPct, eficienciaIdaVuelta, limiteDescargaC o vidaAnios en null significan que la ficha no los declara: la aplicación pide el valor en el formulario o lo muestra como no declarado; ciclosVida: ciclos hasta fin de vida a cada profundidad de descarga (informativo); maxBaterias: máximo de unidades por sistema que admite el fabricante; maxSerie: máximo de unidades en serie que admite la ficha (1 = solo en paralelo); maxParalelo: máximo de ramas en paralelo; energiaKWh: energía nominal de la ficha. Cuando la ficha da la energía y no la capacidad, capacidadAh = energía / tensión nominal"
   },
@@ -165,23 +166,68 @@
       "maxParalelo": 10,
       "fuente": "Victron Energy, ficha técnica \"SmartSolar Charge Controller MPPT 250/60 & MPPT 250/70\" (EN), www.victronenergy.com. Copia en fuentes/fichas/Victron_SmartSolar_MPPT_250-60_250-70.pdf. Voc máx. 250 V en las condiciones más frías; 245 V es el máximo de arranque y operación (se usa como máximo de la ventana). La tensión FV debe superar Vbat + 5 V para arrancar. Operación en paralelo: hasta 10 unidades sincronizadas por Bluetooth.",
       "fechaConsulta": "2026-10-26"
-    },
+    }
+  ],
+  "inversoresCargadores": [
     {
       "id": "must-pv18-3048-vpm",
       "fabricante": "Must Solar",
-      "modelo": "PV18-3048 VPM (MPPT integrado)",
+      "modelo": "PV18-3048 VPM",
+      "pacW": 3000,
+      "potenciaPicoVA": 6000,
       "vocMaxV": 145,
-      "corrienteSalidaA": 80,
       "mpptMinV": 60,
       "mpptMaxV": 130,
       "entradasMppt": 1,
+      "corrienteSalidaA": 80,
       "potenciaFvMaxW": 4000,
       "eficienciaMaxPct": 98,
       "tensionesBateriaV": [
         48
       ],
-      "fuente": "Must Solar, ficha técnica \"PV1800 VPM Series (1KW-5KW)\", columna PV18-3048 VPM (banco de 48 V). Copia en fuentes/fichas/Must_PV1800_VPM_1-5kW.pdf. Es un inversor-cargador con cargador solar MPPT integrado; la ficha no declara la corriente de cortocircuito FV máxima.",
-      "fechaConsulta": "2026-10-24"
+      "maxParalelo": 3,
+      "fuente": "Must Solar, ficha técnica \"PV1800 VPM Series (1KW-5KW)\", columna PV18-3048 VPM (banco de 48 V). Copia en fuentes/fichas/Must_PV1800_VPM_1-5kW.pdf. Inversor-cargador (todo en uno): inversor de onda senoidal pura, cargador solar MPPT y cargador desde la red en un solo equipo. Solar: Voc máxima 145 V, ventana MPPT 60–130 V, potencia FV máxima 4.000 W, corriente máxima de carga solar 80 A. Salida: 3.000 W nominales y 6.000 VA de pico; eficiencia del inversor 90–93 %. Admite hasta 3 unidades en paralelo (modelos de 3 a 5 kW a 48 V). La ficha no declara la corriente de cortocircuito FV máxima.",
+      "fechaConsulta": "2026-11-19"
+    },
+    {
+      "id": "must-pv18-4048-vpm",
+      "fabricante": "Must Solar",
+      "modelo": "PV18-4048 VPM",
+      "pacW": 4000,
+      "potenciaPicoVA": 8000,
+      "vocMaxV": 145,
+      "mpptMinV": 60,
+      "mpptMaxV": 130,
+      "entradasMppt": 1,
+      "corrienteSalidaA": 80,
+      "potenciaFvMaxW": 4000,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        48
+      ],
+      "maxParalelo": 3,
+      "fuente": "Must Solar, ficha técnica \"PV1800 VPM Series (1KW-5KW)\", columna PV18-4048 VPM (banco de 48 V). Copia en fuentes/fichas/Must_PV1800_VPM_1-5kW.pdf. Inversor-cargador (todo en uno): inversor de onda senoidal pura, cargador solar MPPT y cargador desde la red en un solo equipo. Solar: Voc máxima 145 V, ventana MPPT 60–130 V, potencia FV máxima 4.000 W, corriente máxima de carga solar 80 A. Salida: 4.000 W nominales y 8.000 VA de pico; eficiencia del inversor 90–93 %. Admite hasta 3 unidades en paralelo (modelos de 3 a 5 kW a 48 V). La ficha no declara la corriente de cortocircuito FV máxima.",
+      "fechaConsulta": "2026-11-19"
+    },
+    {
+      "id": "must-pv18-5048-vpm",
+      "fabricante": "Must Solar",
+      "modelo": "PV18-5048 VPM",
+      "pacW": 5000,
+      "potenciaPicoVA": 10000,
+      "vocMaxV": 145,
+      "mpptMinV": 60,
+      "mpptMaxV": 130,
+      "entradasMppt": 1,
+      "corrienteSalidaA": 80,
+      "potenciaFvMaxW": 4000,
+      "eficienciaMaxPct": 98,
+      "tensionesBateriaV": [
+        48
+      ],
+      "maxParalelo": 3,
+      "fuente": "Must Solar, ficha técnica \"PV1800 VPM Series (1KW-5KW)\", columna PV18-5048 VPM (banco de 48 V). Copia en fuentes/fichas/Must_PV1800_VPM_1-5kW.pdf. Inversor-cargador (todo en uno): inversor de onda senoidal pura, cargador solar MPPT y cargador desde la red en un solo equipo. Solar: Voc máxima 145 V, ventana MPPT 60–130 V, potencia FV máxima 4.000 W, corriente máxima de carga solar 80 A. Salida: 5.000 W nominales y 10.000 VA de pico; eficiencia del inversor 90–93 %. Admite hasta 3 unidades en paralelo (modelos de 3 a 5 kW a 48 V). La ficha no declara la corriente de cortocircuito FV máxima.",
+      "fechaConsulta": "2026-11-19"
     }
   ],
   "inversores": [

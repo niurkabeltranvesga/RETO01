@@ -12,6 +12,12 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 
+// Lee un Blob como texto (algunas versiones de jsdom no tienen Blob.text()).
+function leerBlob(b, win) {
+  if (typeof b.text === 'function') return b.text();
+  return new Promise(res => { const fr = new win.FileReader(); fr.onload = () => res(fr.result); fr.readAsText(b); });
+}
+
 const RAIZ = path.join(__dirname, '..');
 const leer = f => fs.readFileSync(path.join(RAIZ, f), 'utf-8');
 function falla(msg) { throw new Error('FALLÓ: ' + msg); }
@@ -139,7 +145,7 @@ async function main() {
 
   console.log('\n=== 9. Guardar y volver a abrir el proyecto ===');
   click('btnGuardarArchivo');
-  const guardado = JSON.parse(await descargado.text());
+  const guardado = JSON.parse(await leerBlob(descargado, window));
   if (!guardado.conversion || guardado.conversion.rama !== 'sin' || guardado.conversion.inversorId !== 'inv-b') falla('el archivo no guardó la configuración del paso');
   const otro = doc.querySelector('input[name="ramaConv"][value="con"]');
   otro.checked = true; otro.dispatchEvent(new window.Event('change', { bubbles: true }));

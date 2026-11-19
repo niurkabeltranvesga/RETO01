@@ -1,6 +1,6 @@
 # Manual de usuario
 
-Plataforma web de dimensionamiento fotovoltaico · versión 1.0.0
+Plataforma web de dimensionamiento fotovoltaico · versión 1.1.0
 Dirección: https://niurkabeltranvesga.github.io/RETO01/web/
 
 La plataforma calcula cuánta energía consume un proyecto, cuántos paneles solares necesita y qué equipo de conversión (y, si aplica, qué baterías) debe usar. No requiere instalación ni registro: se abre en el navegador del computador o del teléfono. La misma ayuda está dentro de la aplicación, en el botón **? Ayuda** de la barra superior.
@@ -48,10 +48,14 @@ Verá la potencia pico, el número de paneles y cómo se conectan, y la tabla **
 ## Paso 5 · Conversión y almacenamiento
 
 1. Indique si el sistema tiene baterías (la aplicación lo propone según el contexto del Paso 1).
-2. Responda las preguntas numeradas. Si hay baterías: qué deben cubrir (**días completos sin sol**, el método del curso, o **solo el consumo de la noche**, útil en sistemas híbridos), cuántos días o noches y qué batería usar. Si no hay baterías: el rango de tamaño del inversor.
+2. Responda las preguntas numeradas. Si hay baterías: qué deben cubrir (**días completos sin sol**, el método del curso, o **solo el consumo de la noche**, útil en sistemas híbridos), cuántos días o noches, qué batería usar y qué equipo carga las baterías:
+   - **Inversor-cargador (todo en uno)**, la opción inicial: el regulador MPPT viene dentro del inversor, así que no se necesita regulador aparte. La plataforma revisa la entrada de los paneles, que la potencia de los paneles no pase la que admite el equipo, que la tensión de las baterías sea la del equipo y que su potencia de salida alcance para la demanda máxima.
+   - **Regulador MPPT aparte**: un regulador carga las baterías y un inversor aparte alimenta las cargas.
+
+   Si no hay baterías: el rango de tamaño del inversor.
 3. Lea el resumen de arriba: dice en palabras sencillas si el sistema funciona. Si algo falla, el mismo resumen ofrece el botón para corregirlo (agregar paneles o reorganizarlos).
 
-Las tarjetas de equipos explican por qué cada regulador o inversor sirve o no. Si el generador es grande, la plataforma puede proponer **varios reguladores en paralelo** (por ejemplo, "4 × SmartSolar MPPT 150/70"): los paneles se reparten en grupos y cada grupo va a su regulador, todos cargando las mismas baterías. Solo lo hace con reguladores cuya ficha permite trabajar en paralelo. El detalle técnico y las fórmulas están en **"Ver detalle técnico"**.
+Las tarjetas de equipos explican por qué cada equipo sirve o no. Si el generador es grande o la demanda es alta, la plataforma puede proponer **varios equipos en paralelo**: varios inversores-cargadores suman su potencia de salida, y con **varios reguladores en paralelo** (por ejemplo, "4 × SmartSolar MPPT 150/70"): los paneles se reparten en grupos y cada grupo va a su regulador, todos cargando las mismas baterías. Solo lo hace con reguladores cuya ficha permite trabajar en paralelo. El detalle técnico y las fórmulas están en **"Ver detalle técnico"**.
 
 ## Paso 6 · Informe y resultados
 

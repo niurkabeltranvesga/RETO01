@@ -12,6 +12,12 @@
 //   Vmp en frío      = Vmp · [1 + |β| · (25 − Tmin)]
 //   I al banco       = Ppico / Vnominal (con k reguladores en paralelo, cada
 //                      uno recibe un grupo de cadenas: I = Pgrupo / Vnominal)
+//
+// Con baterías, el banco lo carga un inversor-cargador (todo en uno, con el
+// regulador MPPT integrado) o un regulador MPPT aparte. El inversor-cargador
+// se verifica en su entrada solar igual que un regulador y, además:
+//   Pgrupo ≤ potencia FV máxima de la ficha;  k · Pac ≥ demanda máxima;
+//   tensión del banco dentro de las que admite la ficha.
 //   Relación DC/AC   = Ppico / Pac
 //   Ecc = Ed / η_inv;  Cn[Wh] = Ecc · N / (DoD · fT);  Cn[Ah] = Cn[Wh] / Vbanco
 //   Ns = Vbanco / Vunidad;  Np = ⌈Cn[Ah] / Cunidad⌉
@@ -54,7 +60,7 @@
         con: {
             id: 'con',
             nombre: 'Con almacenamiento',
-            descripcion: 'Off-grid o híbrido: regulador MPPT y banco de baterías.',
+            descripcion: 'Off-grid o híbrido: banco de baterías cargado por un inversor-cargador con MPPT integrado (todo en uno) o por un regulador MPPT aparte.',
         },
         sin: {
             id: 'sin',
@@ -62,6 +68,26 @@
             descripcion: 'On-grid sin baterías: inversor de red con entrada MPPT.',
         },
     };
+
+    // Equipo que carga el banco en la rama con almacenamiento.
+    const EQUIPOS_CARGA = {
+        todoEnUno: {
+            id: 'todoEnUno',
+            tipo: 'inversorCargador',
+            nombre: 'Inversor-cargador con MPPT integrado (todo en uno)',
+            descripcion: 'Un solo equipo tiene el regulador MPPT, el inversor que alimenta las cargas y el cargador desde la red: no se necesita regulador aparte.',
+        },
+        regulador: {
+            id: 'regulador',
+            tipo: 'regulador',
+            nombre: 'Regulador MPPT aparte',
+            descripcion: 'Un regulador (controlador de carga MPPT) carga las baterías y un inversor aparte alimenta las cargas.',
+        },
+    };
+
+    function equipoCargaValido(valor) {
+        return valor === 'todoEnUno' ? 'todoEnUno' : 'regulador';
+    }
 
     function ramaPorContexto(contexto) {
         return contexto === 'on-grid' ? 'sin' : 'con';
@@ -131,14 +157,55 @@
     // declara (maxParalelo). Se busca el menor número de unidades con el que
     // cada una cumple; si ninguno cumple, el menor con solo alertas.
     function verificarRegulador(equipo, arreglo, ctx) {
-        const np = arreglo.cadenasParalelo;
+        return elegirUnidades(equipo, arreglo, ctx, verificarUnidadRegulador, arreglo.cadenasParalelo);
+    }
+
+    // Inversor-cargador (todo en uno): su entrada solar se verifica como un
+    // regulador y, además, la potencia FV, la potencia de salida frente a la
+    // demanda máxima y la tensión del banco. Varias unidades en paralelo
+    // suman potencia de salida aunque no todas reciban paneles.
+    function verificarInversorCargador(equipo, arreglo, ctx) {
+        return elegirUnidades(equipo, arreglo, ctx, verificarUnidadInversorCargador, Infinity);
+    }
+
+    function elegirUnidades(equipo, arreglo, ctx, verificarUnidad, tope) {
         const permitido = ctx.permitirParalelo !== false && typeof equipo.maxParalelo === 'number' && equipo.maxParalelo > 1
-            ? Math.min(Math.floor(equipo.maxParalelo), np) : 1;
+            ? Math.max(1, Math.min(Math.floor(equipo.maxParalelo), tope)) : 1;
         const opciones = [];
-        for (let k = 1; k <= permitido; k++) opciones.push(verificarUnidadRegulador(equipo, arreglo, ctx, k));
-        const elegida = opciones.find(o => o.veredicto === 'cumple') || opciones.find(o => o.veredicto === 'alerta') || opciones[0];
+        for (let k = 1; k <= permitido; k++) opciones.push(verificarUnidad(equipo, arreglo, ctx, k));
+        // Si ninguna cantidad funciona: el regulador se muestra con una unidad;
+        // el inversor-cargador, con la cantidad que deja menos fallas.
+        const fallas = o => o.criterios.filter(c => c.estado === 'no_cumple').length;
+        const peor = tope === Infinity ? opciones.slice().sort((x, y) => fallas(x) - fallas(y) || x.unidades - y.unidades)[0] : opciones[0];
+        const elegida = opciones.find(o => o.veredicto === 'cumple') || opciones.find(o => o.veredicto === 'alerta') || peor;
         elegida.maxUnidades = permitido;
         return elegida;
+    }
+
+    function verificarUnidadInversorCargador(equipo, arreglo, ctx, unidades) {
+        const v = verificarUnidadRegulador(equipo, arreglo, ctx, unidades);
+        const porUnidad = unidades > 1 ? ' por equipo' : '';
+        v.criterios.forEach(c => { c.texto = c.texto.replace(' por regulador', porUnidad).replace('el regulador limita la carga', 'el cargador solar del equipo limita la carga'); });
+        const pGrupoW = v.grupos[0] * v.arreglo.ns * arreglo.modulo.potenciaW;
+        if (typeof equipo.potenciaFvMaxW === 'number') {
+            v.criterios.push(pGrupoW <= equipo.potenciaFvMaxW + TOLERANCIA
+                ? criterio('pfv', 'Potencia FV', 'cumple', pGrupoW, equipo.potenciaFvMaxW, fx(pGrupoW, 0) + ' W' + porUnidad + ' ≤ ' + fx(equipo.potenciaFvMaxW, 0) + ' W')
+                : criterio('pfv', 'Potencia FV', 'no_cumple', pGrupoW, equipo.potenciaFvMaxW, fx(pGrupoW, 0) + ' W' + porUnidad + ' supera la potencia FV máxima de ' + fx(equipo.potenciaFvMaxW, 0) + ' W'));
+        } else {
+            v.criterios.push(criterio('pfv', 'Potencia FV', 'no_aplica', pGrupoW, null, 'La ficha no declara la potencia FV máxima; confírmela con el fabricante'));
+        }
+        const pacTotalW = unidades * equipo.pacW;
+        const demanda = ctx.demandaMaximaW;
+        if (typeof demanda === 'number' && demanda > 0) {
+            v.criterios.push(pacTotalW >= demanda - TOLERANCIA
+                ? criterio('pac', 'Potencia de salida', 'cumple', pacTotalW, demanda, fx(pacTotalW, 0) + ' W ≥ ' + fx(demanda, 0) + ' W de demanda máxima')
+                : criterio('pac', 'Potencia de salida', 'no_cumple', pacTotalW, demanda, fx(pacTotalW, 0) + ' W de salida no alcanzan la demanda máxima de ' + fx(demanda, 0) + ' W'));
+        }
+        v.veredicto = veredictoGlobal(v.criterios);
+        v.potenciaSalidaW = pacTotalW;
+        v.potenciaPicoVA = typeof equipo.potenciaPicoVA === 'number' ? unidades * equipo.potenciaPicoVA : null;
+        v.potenciaGrupoW = pGrupoW;
+        return v;
     }
 
     function verificarUnidadRegulador(equipo, arreglo, ctx, unidades) {
@@ -187,6 +254,13 @@
                 : criterio('isc', 'Isc por entrada', 'no_cumple', iscEntrada, equipo.iscMaxA, f1(iscEntrada) + ' A' + porUnidad + ' supera el cortocircuito máximo de ' + fv(equipo.iscMaxA) + ' A'));
         } else {
             lista.push(criterio('isc', 'Isc por entrada', 'no_aplica', iscEntrada, null, 'La ficha no declara la corriente de cortocircuito máxima; confírmela con el fabricante'));
+        }
+
+        if (Array.isArray(equipo.tensionesBateriaV) && equipo.tensionesBateriaV.length) {
+            const admitidas = equipo.tensionesBateriaV.map(x => fx(x, 0)).join(', ') + ' V';
+            lista.push(equipo.tensionesBateriaV.some(x => Math.abs(x - ctx.vNominalV) < TOLERANCIA)
+                ? criterio('tensionBanco', 'Tensión del banco', 'cumple', ctx.vNominalV, equipo.tensionesBateriaV, 'Sistema de ' + fx(ctx.vNominalV, 0) + ' V: admitido (' + admitidas + ')')
+                : criterio('tensionBanco', 'Tensión del banco', 'no_cumple', ctx.vNominalV, equipo.tensionesBateriaV, 'El equipo trabaja con bancos de ' + admitidas + ' y el sistema es de ' + fx(ctx.vNominalV, 0) + ' V'));
         }
 
         return {
@@ -288,9 +362,15 @@
     // ---------------------------------------------------------------------
     function proponerConfiguracion(tipo, equipo, arreglo, ctx) {
         const n = arreglo.modulosSerie * arreglo.cadenasParalelo;
-        const verificar = tipo === 'regulador' ? verificarRegulador : verificarInversor;
+        const verificar = VERIFICADORES[tipo];
         const base = verificar(equipo, arreglo, ctx);
         const { minSerie, maxSerie } = base.limites;
+        const fijos = base.criterios.filter(c => (c.id === 'pac' || c.id === 'tensionBanco') && c.estado === 'no_cumple');
+        if (fijos.length) {
+            return { posible: false, motivo: 'Reorganizar los paneles no lo resuelve: ' + fijos.map(c => c.id === 'pac'
+                ? (base.unidades > 1 ? base.unidades + ' equipos en paralelo entregan ' : 'el equipo entrega ') + fx(c.valor, 0) + ' W y la demanda máxima es de ' + fx(c.limite, 0) + ' W'
+                : c.texto.charAt(0).toLowerCase() + c.texto.slice(1)).join('; ') + '.' };
+        }
         if (maxSerie < 1 || minSerie > maxSerie) {
             return { posible: false, motivo: 'Con este módulo ninguna cadena queda a la vez bajo la tensión máxima y sobre la tensión mínima del equipo.' };
         }
@@ -309,6 +389,8 @@
             || y.ns - x.ns);
         return Object.assign({ posible: true }, candidatas[0]);
     }
+
+    const VERIFICADORES = { regulador: verificarRegulador, inversorCargador: verificarInversorCargador, inversor: verificarInversor };
 
     // ---------------------------------------------------------------------
     // Banco de baterías
@@ -374,7 +456,7 @@
             advertencias.push('El banco necesita ' + np + ' ramas en paralelo y el fabricante admite como máximo ' + bat.maxParalelo + '.');
         }
         if (Math.abs(p.vBancoV - p.vNominalV) / p.vNominalV > 0.15) {
-            advertencias.push('La tensión del banco (' + fx(p.vBancoV, 1) + ' V) está lejos de la tensión nominal del sistema (' + fx(p.vNominalV, 0) + ' V); revise que el regulador y el inversor la admitan.');
+            advertencias.push('La tensión del banco (' + fx(p.vBancoV, 1) + ' V) está lejos de la tensión nominal del sistema (' + fx(p.vNominalV, 0) + ' V); revise que el equipo de carga y el inversor la admitan.');
         }
 
         return {
@@ -525,6 +607,12 @@
             comparar: (a, b) => (a.unidades || 1) - (b.unidades || 1) || a.equipo.corrienteSalidaA - b.equipo.corrienteSalidaA || a.equipo.vocMaxV - b.equipo.vocMaxV,
             compararConAlerta: (a, b) => (a.unidades || 1) - (b.unidades || 1) || b.equipo.corrienteSalidaA - a.equipo.corrienteSalidaA || a.equipo.vocMaxV - b.equipo.vocMaxV,
         },
+        inversorCargador: {
+            nombre: 'Menos equipos y menor potencia que cubre la demanda',
+            explicacion: 'Entre los inversores-cargadores que cumplen, se elige el que necesita menos unidades en paralelo y, entre esos, el de menor potencia de salida que cubre la demanda máxima, porque es el más ajustado al consumo. Si ninguno cumple sin alertas, se elige entre los que solo tienen alertas el que necesita menos unidades y menos recorta (el de mayor corriente de carga).',
+            comparar: (a, b) => (a.unidades || 1) - (b.unidades || 1) || a.equipo.pacW - b.equipo.pacW || a.equipo.corrienteSalidaA - b.equipo.corrienteSalidaA,
+            compararConAlerta: (a, b) => (a.unidades || 1) - (b.unidades || 1) || b.equipo.corrienteSalidaA - a.equipo.corrienteSalidaA || a.equipo.pacW - b.equipo.pacW,
+        },
         inversor: {
             nombre: 'Relación DC/AC más cercana a 1,2',
             explicacion: 'Entre los inversores que cumplen, se elige el de relación DC/AC más cercana a 1,2, el valor que propone PVWatts. Si ninguno cumple sin alertas, se elige entre los que solo tienen alertas.',
@@ -558,12 +646,15 @@
         };
         const potenciaW = g.modulosSerie * g.cadenasParalelo * g.modulo.potenciaW;
         const advertencias = [];
-        const tipo = rama === 'con' ? 'regulador' : 'inversor';
-        const lista = rama === 'con' ? (e.catalogo.reguladores || []) : (e.catalogo.inversores || []);
-        if (lista.length === 0) throw new Error('El catálogo no tiene ' + (rama === 'con' ? 'reguladores MPPT' : 'inversores de red') + '.');
+        const equipoCarga = rama === 'con' ? equipoCargaValido(e.equipoCarga) : null;
+        const tipo = rama === 'con' ? EQUIPOS_CARGA[equipoCarga].tipo : 'inversor';
+        const LISTAS = { regulador: 'reguladores', inversorCargador: 'inversoresCargadores', inversor: 'inversores' };
+        const NOMBRES_LISTA = { regulador: 'reguladores MPPT', inversorCargador: 'inversores-cargadores con MPPT integrado', inversor: 'inversores de red' };
+        const lista = e.catalogo[LISTAS[tipo]] || [];
+        if (lista.length === 0) throw new Error('El catálogo no tiene ' + NOMBRES_LISTA[tipo] + '.');
 
         const ctxEquipo = rama === 'con'
-            ? { vBancoV: e.vBancoV, vNominalV: e.vNominalV, margenArranqueV: e.margenArranqueV, permitirParalelo: e.permitirParalelo }
+            ? { vBancoV: e.vBancoV, vNominalV: e.vNominalV, margenArranqueV: e.margenArranqueV, permitirParalelo: e.permitirParalelo, demandaMaximaW: e.demandaMaximaW }
             : { rangoDcAc: e.rangoDcAc || RANGO_DC_AC };
         if (rama === 'con' && !(e.vNominalV > 0 && e.vBancoV > 0)) throw new Error('Indique la tensión nominal del sistema y la del banco.');
         if (rama === 'sin') {
@@ -571,7 +662,7 @@
             if (!(r[0] > 0 && r[1] > r[0])) throw new Error('El rango de la relación DC/AC debe tener un mínimo mayor que cero y un máximo mayor que el mínimo.');
         }
 
-        const verificar = rama === 'con' ? verificarRegulador : verificarInversor;
+        const verificar = VERIFICADORES[tipo];
         const verificaciones = lista.map(eq => {
             const v = verificar(eq, arreglo, ctxEquipo);
             if (v.veredicto === 'no_cumple') v.propuesta = proponerConfiguracion(tipo, eq, arreglo, ctxEquipo);
@@ -597,6 +688,7 @@
 
         const resultado = {
             rama,
+            equipoCarga,
             tipoEquipo: tipo,
             potenciaGeneradorW: potenciaW,
             arreglo: describirArreglo(arreglo),
@@ -636,7 +728,7 @@
 
             banco.advertencias.forEach(a => advertencias.push(a));
             if (tasas.carga.estado === 'no_cumple') {
-                advertencias.push('La corriente de carga (' + fx(tasas.corrienteCargaA, 1) + ' A, ' + fx(tasas.tasaCarga, 2) + ' C) supera el límite de la batería (' + fx(tasas.carga.limite, 2) + ' C). Limite la corriente en el regulador o aumente el banco a ' + Math.ceil(tasas.ahMinimosPorCarga) + ' Ah.');
+                advertencias.push('La corriente de carga (' + fx(tasas.corrienteCargaA, 1) + ' A, ' + fx(tasas.tasaCarga, 2) + ' C) supera el límite de la batería (' + fx(tasas.carga.limite, 2) + ' C). Limite la corriente de carga en el equipo o aumente el banco a ' + Math.ceil(tasas.ahMinimosPorCarga) + ' Ah.');
             }
             if (!rec.seRecupera) {
                 advertencias.push('Con este generador el banco no se recupera después de agotar la autonomía: la energía que llega a la batería no alcanza a cubrir el consumo diario.');
@@ -653,9 +745,9 @@
     }
 
     const Conversion = {
-        RAMAS, RANGO_DC_AC, DOD_CURSO_PCT, dodDeDiseno, FACTOR_CONDUCTORES, MARGEN_ARRANQUE_V, CRITERIOS_EQUIPO,
-        ramaPorContexto, tensionesModulo, describirArreglo,
-        verificarRegulador, verificarInversor, limitesSerie, proponerConfiguracion, repartirCadenas, energiaAGenerarWh,
+        RAMAS, EQUIPOS_CARGA, RANGO_DC_AC, DOD_CURSO_PCT, dodDeDiseno, FACTOR_CONDUCTORES, MARGEN_ARRANQUE_V, CRITERIOS_EQUIPO,
+        ramaPorContexto, equipoCargaValido, tensionesModulo, describirArreglo,
+        verificarRegulador, verificarInversorCargador, verificarInversor, limitesSerie, proponerConfiguracion, repartirCadenas, energiaAGenerarWh,
         tensionBancoSugerida, dimensionarBanco, tasasC, recuperacion, balanceCierre,
         compararTecnologias, sensibilidadAutonomia, seleccionarEquipo, dimensionarConversion,
     };

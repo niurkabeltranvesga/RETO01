@@ -479,7 +479,7 @@
           <label class="opcion-rama">
             <input type="radio" name="ramaConv" value="con">
             <span class="opcion-rama-titulo">Sí, con baterías</span>
-            <span class="opcion-rama-desc">Sistemas aislados (off-grid) o híbridos. Se elige el regulador que carga las baterías y se calcula el banco.</span>
+            <span class="opcion-rama-desc">Sistemas aislados (off-grid) o híbridos. Se elige el equipo que carga las baterías (inversor-cargador o regulador) y se calcula el banco.</span>
           </label>
           <label class="opcion-rama">
             <input type="radio" name="ramaConv" value="sin">
@@ -527,7 +527,7 @@
             <label class="field"><span>Eficiencia de la batería, η_bat</span><input type="number" id="convEtaBat" value="0.80" step="0.01" min="0.5" max="1"><small>De cada 1 kWh que entra a la batería, cuánto se recupera (0,80 = 80 %).</small></label>
             <label class="field"><span>Tensión del banco (V)</span><input type="number" id="convVbanco" value="48" step="0.1" min="1"><small>Tensión del conjunto de baterías. Se ajusta sola al elegir la batería.</small></label>
             <label class="field"><span>Factor de temperatura, fT</span><input type="number" id="convFt" value="1.0" step="0.01" min="0.1" max="1"><small>1,0 si en el sitio la temperatura no baja de 18 °C. Con frío la batería rinde menos.</small></label>
-            <label class="field"><span>Tensión del sistema (V)</span><input type="number" id="convVnom" value="48" step="12" min="12"><small>Tensión con la que trabaja el regulador: 12, 24 o 48 V. A mayor potencia, mayor tensión.</small></label>
+            <label class="field"><span>Tensión del sistema (V)</span><input type="number" id="convVnom" value="48" step="12" min="12"><small>Tensión con la que trabaja el equipo que carga las baterías: 12, 24 o 48 V. A mayor potencia, mayor tensión.</small></label>
             <label class="field"><span>Eficiencia del inversor, η_inv</span><input type="number" id="convEtaInvCon" value="0.90" step="0.01" min="0.5" max="1"><small>Las cargas usan corriente alterna; el inversor pierde una parte al convertirla.</small></label>
           </div>
         </div>
@@ -551,9 +551,20 @@
     <div class="pregunta" id="bloqueEquipos">
       <span class="pregunta-num" id="convNumEquipo">4</span>
       <div class="pregunta-cuerpo">
-        <h2 id="convTituloEquipos">¿Qué regulador conecta los paneles a las baterías?</h2>
+        <h2 id="convTituloEquipos">¿Qué equipo conecta los paneles a las baterías?</h2>
+        <div class="selector-autonomia selector-carga" id="convSelectorCarga" role="radiogroup" aria-label="Equipo que carga las baterías">
+          <label class="opcion-autonomia">
+            <input type="radio" name="equipoCarga" value="todoEnUno" checked>
+            <span><strong>Inversor-cargador (todo en uno)</strong><small>El regulador MPPT viene dentro del inversor: un solo equipo carga las baterías y alimenta las cargas. No se necesita regulador aparte.</small></span>
+          </label>
+          <label class="opcion-autonomia">
+            <input type="radio" name="equipoCarga" value="regulador">
+            <span><strong>Regulador MPPT aparte</strong><small>Un regulador carga las baterías y un inversor aparte alimenta las cargas.</small></span>
+          </label>
+        </div>
         <p class="ayuda-campo" id="convAyudaEquipos"></p>
         <select id="convRegulador" hidden></select>
+        <select id="convInversorCargador" hidden></select>
         <select id="convInversor" hidden></select>
         <p class="nota-campos" id="convCriterio"></p>
         <div class="lista-equipos" id="convTarjetasEquipos"></div>

@@ -207,3 +207,37 @@ La fórmula general de la recuperación, trec = N · E_banco / ((Eprod − Egen)
 
 - El banco es mucho más pequeño. En el caso propio, 1 noche son 5,70 kWh: un banco de 10 kWh, frente a unos 120 kWh para 2 días completos.
 - Con un banco pequeño y un generador grande, la tasa C de carga puede superar el límite de la batería. La plataforma lo advierte; se corrige limitando la corriente en los reguladores o aumentando el banco.
+
+## Decisión 8. Regulador opcional: inversor-cargador con MPPT integrado
+
+**Fecha:** 19 de noviembre de 2026  
+**Integrantes:** Niurka Beltrán Vesga, Miguel Ángel Bernal López  
+
+### Contexto
+
+Hasta la versión 1.0.0, la rama con almacenamiento siempre revisaba un regulador MPPT. Pero la mayoría de los equipos para sistemas con baterías son inversores-cargadores (todo en uno): traen el regulador MPPT, el inversor y el cargador desde la red en un solo equipo, así que no necesitan un regulador aparte. El Must PV18-3048 VPM del catálogo es uno de ellos y estaba en la lista de reguladores.
+
+### Decisión
+
+En el Paso 5, con baterías, el usuario elige qué equipo carga el banco:
+
+- **Inversor-cargador (todo en uno)**, opción inicial en proyectos nuevos. Lista nueva del catálogo, `inversoresCargadores`, con los Must PV18-3048, PV18-4048 y PV18-5048 VPM, tomados de la misma ficha técnica (`fuentes/fichas/Must_PV1800_VPM_1-5kW.pdf`).
+- **Regulador MPPT aparte**, como en la versión 1.0.0. Los proyectos guardados antes abren con esta opción, para que sus resultados no cambien; si un proyecto tenía el PV18-3048 como regulador, abre con él como inversor-cargador.
+
+El inversor-cargador se verifica así:
+
+| Criterio | Condición | Si no se cumple |
+|---|---|---|
+| Entrada solar | Igual que un regulador: Voc en frío, arranque (Vbanco + 5 V), ventana MPPT, corriente al banco (Ppico / Vnominal) e Isc | Igual que un regulador |
+| Potencia FV | Potencia de los paneles de cada equipo ≤ potencia FV máxima de la ficha | No cumple |
+| Potencia de salida | k · Pac ≥ demanda máxima del Paso 3 | No cumple |
+| Tensión del banco | La tensión del sistema está entre las que admite la ficha | No cumple |
+
+Si la ficha permite equipos en paralelo (la del PV18 permite hasta 3 en los modelos de 3 a 5 kW a 48 V), se usa el menor número k con el que todo cumple; los paneles se reparten entre los equipos y la potencia de salida se suma. Entre los que cumplen se elige el que necesita menos equipos y, a igualdad, el de menor potencia de salida que cubre la demanda.
+
+### Consecuencias
+
+- Ya no es obligatorio usar un regulador: un sistema con baterías puede quedar con un solo equipo.
+- Con el inversor-cargador la plataforma sí revisa la potencia del inversor que alimenta las cargas, cosa que con el regulador aparte no hace. La potencia de pico de la ficha se informa para revisar el arranque de motores; la corriente de arranque de cada motor no se calcula, porque no está en el cuadro de cargas.
+- Los inversores híbridos Huawei SUN2000-L1 y SUN2000-M1 del catálogo también admiten baterías, pero solo las Huawei de alta tensión (350–560 V según su ficha), que no están en el catálogo de baterías. Por eso siguen solo en la rama sin almacenamiento.
+

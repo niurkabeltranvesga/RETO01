@@ -113,6 +113,10 @@ console.log('\n=== 8. Interfaz con el caso propio (Distrimedical) ===');
   Object.defineProperty($('inputCargarArchivo'), 'files', { value: [archivo], configurable: true });
   $('inputCargarArchivo').dispatchEvent(new w.Event('change'));
   for (let i = 0; i < 50 && !E.conversion; i++) await esperar();
+  // Este caso usa reguladores aparte (no un inversor-cargador todo en uno).
+  const conRegulador = doc.querySelector('input[name="equipoCarga"][value="regulador"]');
+  conRegulador.checked = true;
+  conRegulador.dispatchEvent(new w.Event('change', { bubbles: true }));
   w.UIGenerador.aplicarAjusteConversion({ modulosSerieFijo: 3 });
   await esperar();
   const r = E.conversion.resultado;

@@ -702,20 +702,20 @@ function generarInformePDF(proyecto, resultados, parametros, generador, conversi
     const k = crearKit('Equipos de conversión y baterías', 'Conversión y almacenamiento', r.rama === 'con' ? 'Con almacenamiento' : 'Sin almacenamiento');
     const ETIQ = { cumple: 'Cumple', alerta: 'Alerta', no_cumple: 'No cumple', no_aplica: 'No declarado' };
     const nombre = eq => eq.referenciaTdR ? eq.modelo + ' (caso de prueba)' : eq.fabricante + ' ' + eq.modelo;
-    const CORTO = { voc: 'Voc', arranque: 'arranque', mpptMin: 'ventana', mpptMax: 'ventana', salida: 'corriente', isc: 'Isc', imp: 'Imp', dcac: 'DC/AC' };
+    const CORTO = { voc: 'Voc', arranque: 'arranque', mpptMin: 'ventana', mpptMax: 'ventana', salida: 'corriente', isc: 'Isc', imp: 'Imp', dcac: 'DC/AC', pfv: 'potencia FV', pac: 'potencia de salida', tensionBanco: 'tensión del banco' };
     const fallos = v => Array.from(new Set(v.criterios.filter(c => c.estado === 'no_cumple' || c.estado === 'alerta').map(c => CORTO[c.id] || c.nombre))).join(', ');
     const valorDe = (v, ids) => {
       const cs = v.criterios.filter(c => ids.includes(c.id) && c.estado !== 'no_aplica');
       if (!cs.length) return { texto: 'no declarado', estado: 'no_aplica' };
       const peor = ['no_cumple', 'alerta', 'cumple'].find(x => cs.some(c => c.estado === x));
-      return { estado: peor, texto: cs.map(c => (c.id === 'dcac' ? f(c.valor, 2) : f(c.valor, 1) + (['salida', 'isc', 'imp'].includes(c.id) ? ' A' : ' V'))).join(' / ') };
+      return { estado: peor, texto: cs.map(c => (c.id === 'dcac' ? f(c.valor, 2) : ['pfv', 'pac'].includes(c.id) ? f(c.valor, 0) + ' W' : f(c.valor, 1) + (['salida', 'isc', 'imp'].includes(c.id) ? ' A' : ' V'))).join(' / ') };
     };
 
     k.encabezado(false);
 
     k.seccion('Tipo de sistema y generador');
     k.ficha([
-      ['Rama', r.rama === 'con' ? 'Con almacenamiento: regulador MPPT y banco de baterías' : 'Sin almacenamiento: inversor de red con entrada MPPT'],
+      ['Rama', r.rama === 'con' ? (r.tipoEquipo === 'inversorCargador' ? 'Con almacenamiento: inversor-cargador con MPPT integrado (todo en uno) y banco de baterías' : 'Con almacenamiento: regulador MPPT y banco de baterías') : 'Sin almacenamiento: inversor de red con entrada MPPT'],
       ['Contexto del proyecto', String(proyecto.contexto || '').toUpperCase()],
       ['Generador', r.arreglo.np + ' cadena(s) de ' + r.arreglo.ns + ' módulos de ' + h.generador.modulo.potenciaW + ' Wp (' + f(r.potenciaGeneradorW / 1000, 2) + ' kWp)'],
       ['Voc en frío', f(r.arreglo.vocFrioV, 1) + ' V a ' + h.generador.tMinC + ' °C'],
@@ -723,21 +723,25 @@ function generarInformePDF(proyecto, resultados, parametros, generador, conversi
       ['Isc del generador', f(r.arreglo.iscA, 1) + ' A'],
     ]);
 
-    k.seccion(r.tipoEquipo === 'regulador' ? 'Regulador MPPT seleccionado' : 'Inversor de red seleccionado', 34);
+    k.seccion({ regulador: 'Regulador MPPT seleccionado', inversorCargador: 'Inversor-cargador seleccionado (MPPT integrado)', inversor: 'Inversor de red seleccionado' }[r.tipoEquipo], 34);
     if (r.seleccion) {
       const v = r.seleccion;
       const eq = v.equipo;
       const enParalelo = v.unidades > 1;
       k.parrafo((enParalelo ? v.unidades + ' x ' : '') + nombre(eq) + (enParalelo ? ' en paralelo' : '') + '   ·   ' + ETIQ[v.veredicto], { estilo: 'bold', tam: 10, color: k.ESTADO_TEXTO[v.veredicto], despues: 2.6 });
       k.tarjetas([
-        r.tipoEquipo === 'regulador'
+        r.tipoEquipo === 'inversorCargador'
+          ? ['Potencia de salida', f(v.potenciaSalidaW, 0) + ' W', (enParalelo ? v.unidades + ' x ' + fv(eq.pacW) + ' W · ' : '') + 'demanda máxima ' + f(e.demandaMaximaW, 0) + ' W · al banco ' + f(v.corrienteBancoA, 1) + ' A' + (enParalelo ? ' por equipo' : ''), v.criterios.find(c => c.id === 'pac').estado]
+          : r.tipoEquipo === 'regulador'
           ? [enParalelo ? 'Corriente por regulador' : 'Corriente al banco', f(v.corrienteBancoA, 1) + ' A',
               (enParalelo ? v.unidades + ' grupos de ' + v.grupos.join(' + ') + ' cadenas · total ' + f(v.corrienteBancoTotalA, 1) + ' A' : 'Ppico / Vnominal (' + f(e.vNominalV, 0) + ' V)') + ' · equipo ' + fv(eq.corrienteSalidaA) + ' A', v.criterios.find(c => c.id === 'salida').estado]
           : ['Relación DC/AC', f(v.relacionDcAc, 2), 'rango aceptado ' + f(v.rangoDcAc[0], 2) + ' a ' + f(v.rangoDcAc[1], 2), v.criterios.find(c => c.id === 'dcac').estado],
         ['Módulos en serie', v.limites.minSerie + ' a ' + v.limites.maxSerie, 'el generador usa ' + r.arreglo.ns],
         ['Circuito FV, 1,25 x Isc', f(r.corrienteConductoresA, 1) + ' A', 'NTC 2050, 690-8'],
       ]);
-      k.nota((r.tipoEquipo === 'regulador'
+      k.nota((r.tipoEquipo === 'inversorCargador'
+        ? 'Ficha: Pac ' + fv(eq.pacW) + ' W' + (eq.potenciaPicoVA ? ' (pico ' + fv(eq.potenciaPicoVA) + ' VA)' : '') + ' · Voc máx. ' + fv(eq.vocMaxV) + ' V · ventana ' + eq.mpptMinV + '-' + fv(eq.mpptMaxV) + ' V · carga solar ' + fv(eq.corrienteSalidaA) + ' A · FV máx. ' + (typeof eq.potenciaFvMaxW === 'number' ? fv(eq.potenciaFvMaxW) + ' W' : 'no declarada') + ' · Isc máx. ' + (typeof eq.iscMaxA === 'number' ? fv(eq.iscMaxA) + ' A' : 'no declarada') + (Array.isArray(eq.tensionesBateriaV) ? ' · banco ' + eq.tensionesBateriaV.join('/') + ' V' : '')
+        : r.tipoEquipo === 'regulador'
         ? 'Ficha: Voc máx. ' + fv(eq.vocMaxV) + ' V · carga ' + fv(eq.corrienteSalidaA) + ' A · Isc máx. ' + (typeof eq.iscMaxA === 'number' ? fv(eq.iscMaxA) + ' A' : 'no declarada') + (eq.mpptMinV ? ' · ventana ' + eq.mpptMinV + '-' + fv(eq.mpptMaxV) + ' V' : '')
         : 'Ficha: Pac ' + fv(eq.pacW) + ' W · Voc máx. ' + fv(eq.vocMaxV) + ' V · ventana ' + eq.mpptMinV + '-' + fv(eq.mpptMaxV) + ' V · Imp máx. ' + fv(eq.impMaxA) + ' A · Isc máx. ' + fv(eq.iscMaxA) + ' A por entrada') +
         '. Fuente: ' + fuenteCorta(eq.fuente) + (eq.fechaConsulta ? ' (consulta ' + eq.fechaConsulta + ')' : '') + '.');
@@ -747,7 +751,18 @@ function generarInformePDF(proyecto, resultados, parametros, generador, conversi
     }
 
     k.seccion('Verificación de los equipos del catálogo', 7 * (r.verificaciones.length + 1));
-    if (r.tipoEquipo === 'regulador') {
+    if (r.tipoEquipo === 'inversorCargador') {
+      k.tabla([
+        { titulo: 'Inversor-cargador', ancho: 0.2 }, { titulo: 'Voc en frío', ancho: 0.1, alinear: 'right' }, { titulo: 'Arranque y ventana', ancho: 0.13, alinear: 'right' },
+        { titulo: 'Al banco', ancho: 0.1, alinear: 'right' }, { titulo: 'Potencia FV', ancho: 0.1, alinear: 'right' }, { titulo: 'Salida', ancho: 0.1, alinear: 'right' }, { titulo: 'Veredicto', ancho: 0.27 },
+      ], r.verificaciones.map(v => {
+        const cols = [valorDe(v, ['voc']), valorDe(v, ['arranque', 'mpptMin', 'mpptMax']), valorDe(v, ['salida']), valorDe(v, ['pfv']), valorDe(v, ['pac'])];
+        const fallo = fallos(v);
+        const prop = v.propuesta && v.propuesta.posible ? '. Propuesta ' + v.propuesta.np + ' x ' + v.propuesta.ns : '';
+        return { celdas: [(v.unidades > 1 ? v.unidades + ' x ' : '') + nombre(v.equipo), cols[0].texto, cols[1].texto, cols[2].texto, cols[3].texto, cols[4].texto, ETIQ[v.veredicto] + (fallo ? ': ' + fallo : '') + prop],
+          estados: [null, cols[0].estado, cols[1].estado, cols[2].estado, cols[3].estado, cols[4].estado, v.veredicto], destacada: !!(r.seleccion && r.seleccion.equipo.id === v.equipo.id) };
+      }));
+    } else if (r.tipoEquipo === 'regulador') {
       k.tabla([
         { titulo: 'Regulador', ancho: 0.24 }, { titulo: 'Voc en frío', ancho: 0.11, alinear: 'right' }, { titulo: 'Arranque y ventana', ancho: 0.15, alinear: 'right' },
         { titulo: 'Al banco', ancho: 0.11, alinear: 'right' }, { titulo: 'Isc', ancho: 0.1, alinear: 'right' }, { titulo: 'Veredicto', ancho: 0.29 },

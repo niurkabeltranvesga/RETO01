@@ -2,6 +2,18 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado semántico: MAYOR.MENOR.PARCHE.
 
+## [1.1.0] - 2026-11-19
+
+### Agregado
+- Regulador opcional en sistemas con baterías: en el Paso 5 se elige si las baterías las carga un **inversor-cargador con MPPT integrado (todo en uno)** o un **regulador MPPT aparte**. Con el inversor-cargador se revisan, además de la entrada de los paneles, la potencia FV máxima, la tensión del banco y que la potencia de salida cubra la demanda máxima; si la ficha lo permite, propone varios equipos en paralelo.
+- Lista `inversoresCargadores` en el catálogo de equipos con los Must Solar PV18-3048, PV18-4048 y PV18-5048 VPM, tomados de su ficha técnica.
+- Pregunta del asistente: «¿Necesito un regulador si tengo un inversor-cargador?».
+- Prueba `test/test_inversor_cargador.js`.
+
+### Cambiado
+- El Must PV18-3048 VPM pasa de la lista de reguladores a la de inversores-cargadores. Los proyectos guardados antes de esta versión abren con el regulador aparte, y si usaban el PV18-3048, con él como inversor-cargador.
+- Informes, exportación CSV y JSON indican qué equipo carga las baterías.
+
 ## [1.0.0] - 2026-10-26
 
 Entrega formal de la plataforma (Reto 04).

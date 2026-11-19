@@ -8,7 +8,7 @@
   const h2 = h => String(h).padStart(2, '0');
 
   // Versión publicada de la plataforma (se muestra en la barra superior y en el informe).
-  const VERSION_APP = { numero: '1.0.0', fecha: '26/10/2026' };
+  const VERSION_APP = { numero: '1.1.0', fecha: '19/11/2026' };
   window.VERSION_APP = VERSION_APP;
   Array.from(document.querySelectorAll('[data-version]')).forEach(el => {
     el.textContent = 'v' + VERSION_APP.numero + ' · ' + VERSION_APP.fecha;
