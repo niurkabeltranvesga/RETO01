@@ -9,6 +9,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Lista `inversoresCargadores` en el catálogo de equipos con los Must Solar PV18-3048, PV18-4048 y PV18-5048 VPM, tomados de su ficha técnica.
 - Pregunta del asistente: «¿Necesito un regulador si tengo un inversor-cargador?».
 - Prueba `test/test_inversor_cargador.js`.
+- Inversores de red monofásicos Solis S6-GR1P5K-S, S6-GR1P6K-S y S6-GR1P7K03 a S6-GR1P10K03-NV-ND, que admiten la corriente de los módulos del catálogo; sirven para viviendas monofásicas o de fase dividida.
+- Tipo de red de cada inversor (monofásica o trifásica) en el catálogo y en la tarjeta del equipo.
 
 ### Cambiado
 - El Must PV18-3048 VPM pasa de la lista de reguladores a la de inversores-cargadores. Los proyectos guardados antes de esta versión abren con el regulador aparte, y si usaban el PV18-3048, con él como inversor-cargador.

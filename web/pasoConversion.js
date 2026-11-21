@@ -549,7 +549,8 @@
       return 'Aguanta hasta ' + eq.vocMaxV + ' V de los paneles · carga hasta ' + eq.corrienteSalidaA + ' A' + (typeof eq.mpptMinV === 'number' ? ' · trabaja desde ' + eq.mpptMinV + ' V' : '') +
         (typeof eq.maxParalelo === 'number' && eq.maxParalelo > 1 ? ' · hasta ' + eq.maxParalelo + ' en paralelo' : '');
     }
-    return 'Potencia ' + num(eq.pacW, 0) + ' W · trabaja entre ' + eq.mpptMinV + ' y ' + eq.mpptMaxV + ' V · hasta ' + num(eq.impMaxA, 1) + ' A por entrada';
+    return 'Potencia ' + num(eq.pacW, 0) + ' W · trabaja entre ' + eq.mpptMinV + ' y ' + eq.mpptMaxV + ' V · hasta ' + num(eq.impMaxA, 1) + ' A por entrada' +
+      (typeof eq.red === 'string' && eq.red ? ' · red ' + eq.red.charAt(0).toLowerCase() + eq.red.slice(1) : '');
   }
 
   function tarjetaEquipo(v, r) {

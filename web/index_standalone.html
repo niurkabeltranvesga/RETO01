@@ -3090,7 +3090,7 @@ window.DATOS_RESPALDO = {
     "unidades": {
       "reguladores": "vocMaxV: tensión FV máxima en circuito abierto [V]; corrienteSalidaA: corriente nominal de carga al banco [A]; iscMaxA: corriente de cortocircuito FV máxima por entrada [A]; mpptMinV y mpptMaxV: ventana MPPT declarada para la tensión del banco [V] (opcional); entradasMppt: número de seguidores; maxParalelo: número máximo de unidades que el fabricante permite conectar en paralelo sobre el mismo banco (si la ficha no lo declara, se usa una sola unidad)",
       "inversoresCargadores": "Equipos todo en uno (inversor-cargador) con regulador MPPT integrado, para sistemas con baterías: no necesitan un regulador aparte. pacW: potencia nominal de salida en CA [W]; potenciaPicoVA: potencia de pico (sobrecarga) [VA]; vocMaxV, mpptMinV, mpptMaxV, entradasMppt e iscMaxA: entrada FV, igual que en los reguladores; corrienteSalidaA: corriente máxima de carga solar al banco [A]; potenciaFvMaxW: potencia FV máxima que admite la entrada solar [W]; tensionesBateriaV: tensiones de banco que admite [V]; maxParalelo: unidades que el fabricante permite en paralelo",
-      "inversores": "pacW: potencia nominal de salida en CA [W]; vocMaxV: tensión máxima de entrada [V]; mpptMinV y mpptMaxV: ventana MPPT [V]; arranqueV: tensión de arranque [V] (opcional); impMaxA: corriente máxima por entrada MPPT [A]; iscMaxA: cortocircuito máximo por entrada MPPT [A]; entradasMppt: número de seguidores",
+      "inversores": "pacW: potencia nominal de salida en CA [W]; vocMaxV: tensión máxima de entrada [V]; mpptMinV y mpptMaxV: ventana MPPT [V]; arranqueV: tensión de arranque [V] (opcional); impMaxA: corriente máxima por entrada MPPT [A]; iscMaxA: cortocircuito máximo por entrada MPPT [A]; entradasMppt: número de seguidores; red: tipo de red al que se conecta según la ficha (monofásica o trifásica, con su tensión); se informa en la tarjeta del equipo y no se verifica contra la vivienda",
       "baterias": "tensionV: tensión nominal de la unidad [V]; capacidadAh: capacidad nominal [Ah]; dodDisenoPct: profundidad de descarga de diseño [%]; eficienciaIdaVuelta: eficiencia en energía (0 a 1); limiteCargaC y limiteDescargaC: tasa C máxima recomendada; vidaAnios: vida de diseño [años]; dodDisenoPct, eficienciaIdaVuelta, limiteDescargaC o vidaAnios en null significan que la ficha no los declara: la aplicación pide el valor en el formulario o lo muestra como no declarado; ciclosVida: ciclos hasta fin de vida a cada profundidad de descarga (informativo); maxBaterias: máximo de unidades por sistema que admite el fabricante; maxSerie: máximo de unidades en serie que admite la ficha (1 = solo en paralelo); maxParalelo: máximo de ramas en paralelo; energiaKWh: energía nominal de la ficha. Cuando la ficha da la energía y no la capacidad, capacidadAh = energía / tensión nominal"
     },
     "reguladores": [
@@ -3377,7 +3377,8 @@ window.DATOS_RESPALDO = {
         "entradasMppt": 2,
         "eficienciaMaxPct": 98.2,
         "fuente": "Huawei, ficha técnica \"SUN2000-2/3/3.68/4/4.6/5/6KTL-L1 Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-2-6KTL-L1.pdf. Nota *2 de la ficha: con baterías LG la tensión máxima de entrada y de operación baja a 495 V.",
-        "fechaConsulta": "2026-10-24"
+        "fechaConsulta": "2026-10-24",
+        "red": "Monofásica, 220/230/240 V"
       },
       {
         "id": "huawei-sun2000-3ktl-l1",
@@ -3393,7 +3394,8 @@ window.DATOS_RESPALDO = {
         "entradasMppt": 2,
         "eficienciaMaxPct": 98.3,
         "fuente": "Huawei, ficha técnica \"SUN2000-2/3/3.68/4/4.6/5/6KTL-L1 Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-2-6KTL-L1.pdf. Nota *2 de la ficha: con baterías LG la tensión máxima de entrada y de operación baja a 495 V.",
-        "fechaConsulta": "2026-10-24"
+        "fechaConsulta": "2026-10-24",
+        "red": "Monofásica, 220/230/240 V"
       },
       {
         "id": "huawei-sun2000-5ktl-l1",
@@ -3409,7 +3411,8 @@ window.DATOS_RESPALDO = {
         "entradasMppt": 2,
         "eficienciaMaxPct": 98.4,
         "fuente": "Huawei, ficha técnica \"SUN2000-2/3/3.68/4/4.6/5/6KTL-L1 Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-2-6KTL-L1.pdf. Nota *2 de la ficha: con baterías LG la tensión máxima de entrada y de operación baja a 495 V.",
-        "fechaConsulta": "2026-10-24"
+        "fechaConsulta": "2026-10-24",
+        "red": "Monofásica, 220/230/240 V"
       },
       {
         "id": "huawei-sun2000-6ktl-m1",
@@ -3426,7 +3429,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 9000,
         "fuente": "Huawei, ficha técnica \"SUN2000-3/4/5/6/8/10KTL-M1 (Versión de Alta Corriente) Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-3-10KTL-M1.pdf. Conexión trifásica 220/380 V o 230/400 V. La ventana MPPT es el rango de tensión de operación de la ficha (140 V a 980 V).",
-        "fechaConsulta": "2026-10-25"
+        "fechaConsulta": "2026-10-25",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W/N+PE)"
       },
       {
         "id": "huawei-sun2000-8ktl-m1",
@@ -3443,7 +3447,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 12000,
         "fuente": "Huawei, ficha técnica \"SUN2000-3/4/5/6/8/10KTL-M1 (Versión de Alta Corriente) Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-3-10KTL-M1.pdf. Conexión trifásica 220/380 V o 230/400 V. La ventana MPPT es el rango de tensión de operación de la ficha (140 V a 980 V).",
-        "fechaConsulta": "2026-10-25"
+        "fechaConsulta": "2026-10-25",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W/N+PE)"
       },
       {
         "id": "huawei-sun2000-10ktl-m1",
@@ -3460,7 +3465,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 15000,
         "fuente": "Huawei, ficha técnica \"SUN2000-3/4/5/6/8/10KTL-M1 (Versión de Alta Corriente) Smart Energy Controller\" (ES), solar.huawei.com/eu. Copia en fuentes/fichas/Huawei_SUN2000-3-10KTL-M1.pdf. Conexión trifásica 220/380 V o 230/400 V. La ventana MPPT es el rango de tensión de operación de la ficha (140 V a 980 V).",
-        "fechaConsulta": "2026-10-25"
+        "fechaConsulta": "2026-10-25",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W/N+PE)"
       },
       {
         "id": "growatt-mod-10ktl3-x",
@@ -3477,7 +3483,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 15000,
         "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 cadena por seguidor: 13 A / 16 A por seguidor.",
-        "fechaConsulta": "2026-10-26"
+        "fechaConsulta": "2026-10-26",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W+N+PE)"
       },
       {
         "id": "growatt-mod-11ktl3-x",
@@ -3494,7 +3501,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 16500,
         "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 cadena por seguidor: 13 A / 16 A por seguidor.",
-        "fechaConsulta": "2026-10-26"
+        "fechaConsulta": "2026-10-26",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W+N+PE)"
       },
       {
         "id": "growatt-mod-12ktl3-x",
@@ -3511,7 +3519,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 18000,
         "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 o 2 cadenas por seguidor: 26 A / 32 A por seguidor.",
-        "fechaConsulta": "2026-10-26"
+        "fechaConsulta": "2026-10-26",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W+N+PE)"
       },
       {
         "id": "growatt-mod-13ktl3-x",
@@ -3528,7 +3537,8 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 19500,
         "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 o 2 cadenas por seguidor: 26 A / 32 A por seguidor.",
-        "fechaConsulta": "2026-10-26"
+        "fechaConsulta": "2026-10-26",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W+N+PE)"
       },
       {
         "id": "growatt-mod-15ktl3-x",
@@ -3545,7 +3555,108 @@ window.DATOS_RESPALDO = {
         "eficienciaMaxPct": 98.6,
         "potenciaFvMaxRecomendadaWp": 22500,
         "fuente": "Growatt, ficha técnica \"MOD 10~15KTL3-X\" (EN), www.ginverter.com. Copia en fuentes/fichas/Growatt_MOD_10-15KTL3-X.pdf. Conexión trifásica 220/380 V o 230/400 V. Ventana MPPT 140 V a 1.000 V; arranque 160 V. Admite 1 o 2 cadenas por seguidor: 26 A / 32 A por seguidor.",
-        "fechaConsulta": "2026-10-26"
+        "fechaConsulta": "2026-10-26",
+        "red": "Trifásica, 220/380 V o 230/400 V (3W+N+PE)"
+      },
+      {
+        "id": "solis-s6-gr1p5k-s",
+        "fabricante": "Solis",
+        "modelo": "S6-GR1P5K-S",
+        "pacW": 5000,
+        "vocMaxV": 550,
+        "mpptMinV": 90,
+        "mpptMaxV": 550,
+        "arranqueV": 100,
+        "impMaxA": 16,
+        "iscMaxA": 22,
+        "entradasMppt": 2,
+        "red": "Monofásica, 220/230 V (1/N/PE)",
+        "fuente": "Solis, ficha técnica \"S6-GR1P(2.5-6)K-S\" (versión PHL V2,0, oct. 2024), solisinverters.com/uploads/file/Solis_datasheet_S6-GR1P(2,5-6)K-S_PHL_V2,0_202410.pdf. Red monofásica 1/N/PE, 220/230 V; 2 MPPT con una cadena cada uno; 16 A y 22 A de cortocircuito por MPPT; tensión máxima 550 V; potencia FV máxima recomendada 7,5 kW. La ficha da dos valores de arranque (60 V y 100 V) y de ventana MPPT (50–550 V y 90–550 V) sin decir a qué modelo corresponde cada uno: se usan los más exigentes (100 V y 90–550 V). La ficha no da la eficiencia de cada modelo por separado.",
+        "fechaConsulta": "2026-11-21"
+      },
+      {
+        "id": "solis-s6-gr1p6k-s",
+        "fabricante": "Solis",
+        "modelo": "S6-GR1P6K-S",
+        "pacW": 6000,
+        "vocMaxV": 550,
+        "mpptMinV": 90,
+        "mpptMaxV": 550,
+        "arranqueV": 100,
+        "impMaxA": 16,
+        "iscMaxA": 22,
+        "entradasMppt": 2,
+        "red": "Monofásica, 220/230 V (1/N/PE)",
+        "fuente": "Solis, ficha técnica \"S6-GR1P(2.5-6)K-S\" (versión PHL V2,0, oct. 2024), solisinverters.com/uploads/file/Solis_datasheet_S6-GR1P(2,5-6)K-S_PHL_V2,0_202410.pdf. Red monofásica 1/N/PE, 220/230 V; 2 MPPT con una cadena cada uno; 16 A y 22 A de cortocircuito por MPPT; tensión máxima 550 V; potencia FV máxima recomendada 9 kW. La ficha da dos valores de arranque (60 V y 100 V) y de ventana MPPT (50–550 V y 90–550 V) sin decir a qué modelo corresponde cada uno: se usan los más exigentes (100 V y 90–550 V). La ficha no da la eficiencia de cada modelo por separado.",
+        "fechaConsulta": "2026-11-21"
+      },
+      {
+        "id": "solis-s6-gr1p7k03-nv-nd",
+        "fabricante": "Solis",
+        "modelo": "S6-GR1P7K03-NV-ND",
+        "pacW": 7000,
+        "vocMaxV": 550,
+        "mpptMinV": 50,
+        "mpptMaxV": 500,
+        "arranqueV": 60,
+        "impMaxA": 20,
+        "iscMaxA": 25,
+        "entradasMppt": 3,
+        "eficienciaMaxPct": 98.0,
+        "red": "Monofásica, 220/230 V (1/N/PE)",
+        "fuente": "Solis, ficha técnica \"S6-GR1P(7-10)K03-NV-ND\" (versión PHL V2,0, oct. 2024, marcada como preliminar), solisinverters.com/uploads/file/Solis_datasheet_S6-GR1P(7-10)K03-NV-ND_PHL_V2,0_202410.pdf. Red monofásica 1/N/PE, 220/230 V; 3 MPPT con una cadena cada uno; 20 A y 25 A de cortocircuito por MPPT; tensión máxima 550 V; arranque 60 V; ventana MPPT 50–500 V; potencia FV máxima recomendada 10,5 kW; eficiencia máxima 98,0 %.",
+        "fechaConsulta": "2026-11-21"
+      },
+      {
+        "id": "solis-s6-gr1p8k03-nv-nd",
+        "fabricante": "Solis",
+        "modelo": "S6-GR1P8K03-NV-ND",
+        "pacW": 8000,
+        "vocMaxV": 550,
+        "mpptMinV": 50,
+        "mpptMaxV": 500,
+        "arranqueV": 60,
+        "impMaxA": 20,
+        "iscMaxA": 25,
+        "entradasMppt": 3,
+        "eficienciaMaxPct": 98.0,
+        "red": "Monofásica, 220/230 V (1/N/PE)",
+        "fuente": "Solis, ficha técnica \"S6-GR1P(7-10)K03-NV-ND\" (versión PHL V2,0, oct. 2024, marcada como preliminar), solisinverters.com/uploads/file/Solis_datasheet_S6-GR1P(7-10)K03-NV-ND_PHL_V2,0_202410.pdf. Red monofásica 1/N/PE, 220/230 V; 3 MPPT con una cadena cada uno; 20 A y 25 A de cortocircuito por MPPT; tensión máxima 550 V; arranque 60 V; ventana MPPT 50–500 V; potencia FV máxima recomendada 12 kW; eficiencia máxima 98,0 %.",
+        "fechaConsulta": "2026-11-21"
+      },
+      {
+        "id": "solis-s6-gr1p9k03-nv-nd",
+        "fabricante": "Solis",
+        "modelo": "S6-GR1P9K03-NV-ND",
+        "pacW": 9000,
+        "vocMaxV": 550,
+        "mpptMinV": 50,
+        "mpptMaxV": 500,
+        "arranqueV": 60,
+        "impMaxA": 20,
+        "iscMaxA": 25,
+        "entradasMppt": 3,
+        "eficienciaMaxPct": 98.0,
+        "red": "Monofásica, 220/230 V (1/N/PE)",
+        "fuente": "Solis, ficha técnica \"S6-GR1P(7-10)K03-NV-ND\" (versión PHL V2,0, oct. 2024, marcada como preliminar), solisinverters.com/uploads/file/Solis_datasheet_S6-GR1P(7-10)K03-NV-ND_PHL_V2,0_202410.pdf. Red monofásica 1/N/PE, 220/230 V; 3 MPPT con una cadena cada uno; 20 A y 25 A de cortocircuito por MPPT; tensión máxima 550 V; arranque 60 V; ventana MPPT 50–500 V; potencia FV máxima recomendada 13,5 kW; eficiencia máxima 98,0 %.",
+        "fechaConsulta": "2026-11-21"
+      },
+      {
+        "id": "solis-s6-gr1p10k03-nv-nd",
+        "fabricante": "Solis",
+        "modelo": "S6-GR1P10K03-NV-ND",
+        "pacW": 10000,
+        "vocMaxV": 550,
+        "mpptMinV": 50,
+        "mpptMaxV": 500,
+        "arranqueV": 60,
+        "impMaxA": 20,
+        "iscMaxA": 25,
+        "entradasMppt": 3,
+        "eficienciaMaxPct": 98.0,
+        "red": "Monofásica, 220/230 V (1/N/PE)",
+        "fuente": "Solis, ficha técnica \"S6-GR1P(7-10)K03-NV-ND\" (versión PHL V2,0, oct. 2024, marcada como preliminar), solisinverters.com/uploads/file/Solis_datasheet_S6-GR1P(7-10)K03-NV-ND_PHL_V2,0_202410.pdf. Red monofásica 1/N/PE, 220/230 V; 3 MPPT con una cadena cada uno; 20 A y 25 A de cortocircuito por MPPT; tensión máxima 550 V; arranque 60 V; ventana MPPT 50–500 V; potencia FV máxima recomendada 15 kW; eficiencia máxima 98,0 %.",
+        "fechaConsulta": "2026-11-21"
       }
     ],
     "baterias": [
@@ -8593,7 +8704,8 @@ if (typeof window !== 'undefined') window.generarResumenPDF = generarResumenPDF;
       return 'Aguanta hasta ' + eq.vocMaxV + ' V de los paneles · carga hasta ' + eq.corrienteSalidaA + ' A' + (typeof eq.mpptMinV === 'number' ? ' · trabaja desde ' + eq.mpptMinV + ' V' : '') +
         (typeof eq.maxParalelo === 'number' && eq.maxParalelo > 1 ? ' · hasta ' + eq.maxParalelo + ' en paralelo' : '');
     }
-    return 'Potencia ' + num(eq.pacW, 0) + ' W · trabaja entre ' + eq.mpptMinV + ' y ' + eq.mpptMaxV + ' V · hasta ' + num(eq.impMaxA, 1) + ' A por entrada';
+    return 'Potencia ' + num(eq.pacW, 0) + ' W · trabaja entre ' + eq.mpptMinV + ' y ' + eq.mpptMaxV + ' V · hasta ' + num(eq.impMaxA, 1) + ' A por entrada' +
+      (typeof eq.red === 'string' && eq.red ? ' · red ' + eq.red.charAt(0).toLowerCase() + eq.red.slice(1) : '');
   }
 
   function tarjetaEquipo(v, r) {
